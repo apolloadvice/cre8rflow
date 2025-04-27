@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,15 +15,7 @@ type VideoAsset = {
   src?: string;
 };
 
-const placeholderVideos: VideoAsset[] = [
-  {
-    id: "1",
-    name: "raw tennis footage",
-    thumbnail: "https://i.imgur.com/mBnxdcT.jpg",
-    duration: 240,
-    uploaded: new Date(),
-  },
-];
+const placeholderVideos: VideoAsset[] = [];
 
 interface AssetPanelProps {
   onVideoSelect: (video: VideoAsset) => void;
@@ -65,7 +56,6 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
 
     if (!file) return;
 
-    // Check if file is a video
     if (!file.type.startsWith("video/")) {
       toast({
         title: "Invalid file type",
@@ -75,7 +65,6 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
       return;
     }
 
-    // Check file size (max 1024MB)
     if (file.size > 1024 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -87,10 +76,8 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
 
     setIsUploading(true);
 
-    // Create URL for the video file
     const videoUrl = URL.createObjectURL(file);
 
-    // Create a video element to get duration
     const video = document.createElement("video");
     video.src = videoUrl;
     
@@ -104,27 +91,22 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
         src: videoUrl,
       };
 
-      // Generate thumbnail from the video
       setTimeout(() => {
         try {
-          video.currentTime = 1; // Set to 1 second to avoid black frame
+          video.currentTime = 1;
           
           video.onseeked = () => {
-            // Create canvas and draw video frame
             const canvas = document.createElement("canvas");
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext("2d");
             ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // Get thumbnail as data URL
             newVideo.thumbnail = canvas.toDataURL("image/jpeg");
             
-            // Add to uploaded videos
             setUploadedVideos(prev => [newVideo, ...prev]);
             setIsUploading(false);
             
-            // Auto-select the uploaded video
             onVideoSelect(newVideo);
             
             toast({
@@ -135,8 +117,7 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
         } catch (error) {
           console.error("Error generating thumbnail:", error);
           
-          // Fallback if thumbnail generation fails
-          newVideo.thumbnail = "https://i.imgur.com/JcGrHtu.jpg"; // Placeholder thumbnail
+          newVideo.thumbnail = "https://i.imgur.com/JcGrHtu.jpg";
           setUploadedVideos(prev => [newVideo, ...prev]);
           setIsUploading(false);
           onVideoSelect(newVideo);
@@ -165,9 +146,7 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Make video item draggable
   const handleDragStart = (e: React.DragEvent, video: VideoAsset) => {
-    // Store video data in dataTransfer
     e.dataTransfer.setData("application/json", JSON.stringify(video));
     e.dataTransfer.effectAllowed = "copy";
   };

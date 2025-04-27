@@ -4,7 +4,7 @@ import NavBar from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Clock, Film } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 interface Project {
   id: string;
@@ -18,30 +18,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Mock projects data
-  const [projects] = useState<Project[]>([
-    {
-      id: "1",
-      name: "Tennis Highlights",
-      thumbnail: "public/lovable-uploads/c8742bba-cefb-49d1-ab33-0cc154e7667f.png",
-      updatedAt: new Date(2025, 3, 25), // April 25, 2025
-      duration: 127, // seconds
-    },
-    {
-      id: "2",
-      name: "Travel Vlog - Paris",
-      thumbnail: "https://i.imgur.com/A4D6SLs.jpg",
-      updatedAt: new Date(2025, 3, 22), // April 22, 2025
-      duration: 248, // seconds
-    },
-    {
-      id: "3",
-      name: "Product Showcase",
-      thumbnail: "https://i.imgur.com/uu3ve98.jpg",
-      updatedAt: new Date(2025, 3, 18), // April 18, 2025
-      duration: 75, // seconds
-    },
-  ]);
+  // Remove default projects
+  const [projects] = useState<Project[]>([]);
 
   // Format date as "Apr 25, 2025"
   const formatDate = (date: Date) => {
@@ -117,36 +95,11 @@ const Dashboard = () => {
             </CardFooter>
           </Card>
 
-          {filteredProjects.map((project) => (
-            <Card
-              key={project.id}
-              className="bg-cre8r-gray-800 border border-cre8r-gray-700 hover:border-cre8r-violet transition-colors cursor-pointer overflow-hidden"
-              onClick={() => navigate("/editor")}
-            >
-              <CardContent className="p-0 relative">
-                <img
-                  src={project.thumbnail}
-                  alt={project.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute bottom-2 right-2 bg-black/70 rounded text-xs px-2 py-1 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatDuration(project.duration)}
-                </div>
-              </CardContent>
-              <CardHeader className="p-4 pb-0">
-                <CardTitle className="text-lg flex gap-2 items-center">
-                  <Film className="h-5 w-5 text-cre8r-violet" />
-                  {project.name}
-                </CardTitle>
-              </CardHeader>
-              <CardFooter className="p-4 pt-2">
-                <p className="text-sm text-cre8r-gray-300">
-                  Last edited on {formatDate(project.updatedAt)}
-                </p>
-              </CardFooter>
-            </Card>
-          ))}
+          {projects.length === 0 && (
+            <div className="text-center text-cre8r-gray-400 col-span-full py-8">
+              No projects yet. Click "New Project" to get started.
+            </div>
+          )}
         </div>
       </div>
     </div>

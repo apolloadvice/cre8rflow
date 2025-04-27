@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
@@ -10,8 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Save, Film } from "lucide-react";
 import { useThumbnails } from "@/hooks/useThumbnails";
 import { useCommand, Operation } from "@/hooks/useCommand";
-
-const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 interface Clip {
   id: string;
@@ -44,44 +41,18 @@ const Editor = () => {
   const { thumbnailData } = useThumbnails(activeVideoAsset?.id);
   const { executeCommand } = useCommand("current-project");
 
-  useEffect(() => {
-    if (!activeVideoAsset) {
-      const timer = setTimeout(() => {
-        setVideoSrc(SAMPLE_VIDEO_URL);
-        toast({
-          title: "Video loaded",
-          description: "Sample video loaded successfully",
-        });
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [toast, activeVideoAsset]);
-
-  // Effect to handle thumbnails when they're available
-  useEffect(() => {
-    if (thumbnailData) {
-      console.log("Thumbnails loaded:", thumbnailData);
-      // In a real implementation, this would update the UI to show thumbnails
-    }
-  }, [thumbnailData]);
-
   const handleVideoSelect = (video: VideoAsset) => {
     setClips([]);
     setActiveVideoAsset(video);
     
     if (video.src) {
       setVideoSrc(video.src);
-    } else if (video.id === "1") {
-      setVideoSrc(SAMPLE_VIDEO_URL);
     }
     
     toast({
       title: "Video selected",
       description: `${video.name} is now ready to edit`,
     });
-    
-    // In a real implementation, this would trigger a fetch for thumbnails
   };
 
   const handleVideoDrop = (file: File, track: number, dropTime: number) => {
@@ -121,7 +92,7 @@ const Editor = () => {
 
   const handleVideoAssetDrop = (videoAsset: VideoAsset, track: number, dropTime: number) => {
     // Set video source if needed
-    const videoSrc = videoAsset.src || (videoAsset.id === "1" ? SAMPLE_VIDEO_URL : undefined);
+    const videoSrc = videoAsset.src;
     if (!videoSrc) {
       toast({
         title: "Error",
