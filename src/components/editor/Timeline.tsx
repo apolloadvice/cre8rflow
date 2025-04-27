@@ -1,10 +1,9 @@
-
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface TimelineProps {
-  duration: number; // in seconds
-  currentTime: number; // in seconds
+  duration: number;
+  currentTime: number;
   onTimeUpdate: (time: number) => void;
   clips?: {
     id: string;
@@ -14,6 +13,9 @@ interface TimelineProps {
     type?: string;
     name?: string;
   }[];
+  onClipSelect?: (clipId: string | null) => void;
+  selectedClipId?: string | null;
+  onVideoDrop?: (file: File, track: number, time: number) => void;
 }
 
 const Timeline = ({
@@ -21,6 +23,9 @@ const Timeline = ({
   currentTime,
   onTimeUpdate,
   clips = [],
+  onClipSelect,
+  selectedClipId,
+  onVideoDrop,
 }: TimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -126,6 +131,33 @@ const Timeline = ({
     };
   }, [isDragging, duration, onTimeUpdate]);
 
+  // Handle drag over for video dropping
+  const handleDragOver = (e: React.DragEvent, trackIndex: number) => {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = "rgba(139, 92, 246, 0.1)"; // Highlight drop zone
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = "";
+  };
+
+  const handleDrop = (e: React.DragEvent, trackIndex: number) => {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = "";
+    
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith("video/")) return;
+
+    const rect = timelineRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left;
+    const dropTime = (x / rect.width) * duration;
+
+    onVideoDrop?.(file, trackIndex, dropTime);
+  };
+
   return (
     <div className="h-full flex flex-col bg-cre8r-gray-900 border-t border-cre8r-gray-700 select-none">
       <div className="flex items-center justify-between p-2 bg-cre8r-gray-800 border-b border-cre8r-gray-700">
@@ -171,16 +203,22 @@ const Timeline = ({
                 </div>
                 <div 
                   className="flex-1 h-12 bg-cre8r-gray-800 rounded-r border border-cre8r-gray-700 relative"
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
                 >
-                  {/* Render clips for this track */}
                   {clips.filter(clip => clip.track === index).map((clip) => (
                     <div
                       key={clip.id}
-                      className="video-timeline-marker absolute h-10 my-1 rounded opacity-90 overflow-hidden cursor-pointer hover:opacity-100 hover:ring-1 hover:ring-white transition-opacity"
+                      className={cn(
+                        "video-timeline-marker absolute h-10 my-1 rounded opacity-90 overflow-hidden cursor-pointer hover:opacity-100 hover:ring-1 hover:ring-white transition-opacity",
+                        selectedClipId === clip.id && "ring-2 ring-cre8r-violet"
+                      )}
                       style={{
                         left: `${(clip.start / duration) * 100}%`,
                         width: `${((clip.end - clip.start) / duration) * 100}%`,
                       }}
+                      onClick={() => onClipSelect?.(clip.id)}
                       title={clip.name || "Edit"}
                     >
                       <div className={`h-full w-full bg-gradient-to-r ${getClipStyle(clip.type)} flex items-center justify-center px-2`}>

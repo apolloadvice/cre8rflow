@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
@@ -9,7 +8,6 @@ import ChatPanel from "@/components/editor/ChatPanel";
 import { Button } from "@/components/ui/button";
 import { Save, Film } from "lucide-react";
 
-// Sample video URL for demo purposes
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 interface Clip {
@@ -37,9 +35,9 @@ const Editor = () => {
   const [videoSrc, setVideoSrc] = useState<string | undefined>(undefined);
   const [clips, setClips] = useState<Clip[]>([]);
   const [activeVideoAsset, setActiveVideoAsset] = useState<VideoAsset | null>(null);
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Set the sample video after a short delay to simulate loading
     if (!activeVideoAsset) {
       const timer = setTimeout(() => {
         setVideoSrc(SAMPLE_VIDEO_URL);
@@ -54,17 +52,12 @@ const Editor = () => {
   }, [toast, activeVideoAsset]);
 
   const handleVideoSelect = (video: VideoAsset) => {
-    // Clear any existing clips when selecting a new video
     setClips([]);
-    
-    // Set the active video
     setActiveVideoAsset(video);
     
-    // Update the video source for the player
     if (video.src) {
       setVideoSrc(video.src);
     } else if (video.id === "1") {
-      // For the placeholder video
       setVideoSrc(SAMPLE_VIDEO_URL);
     }
     
@@ -74,156 +67,101 @@ const Editor = () => {
     });
   };
 
-  const handleChatCommand = (command: string) => {
-    console.log("Processing command:", command);
+  const handleVideoDrop = (file: File, track: number, dropTime: number) => {
+    const videoUrl = URL.createObjectURL(file);
     
-    if (!videoSrc || duration === 0) {
+    const video = document.createElement("video");
+    video.src = videoUrl;
+    
+    video.onloadedmetadata = () => {
+      const clipDuration = video.duration;
+      const newClip: Clip = {
+        id: `clip-${Date.now()}`,
+        start: dropTime,
+        end: dropTime + clipDuration,
+        track,
+        type: "video",
+        name: file.name
+      };
+      
+      setClips(prevClips => [...prevClips, newClip]);
+      setSelectedClipId(newClip.id);
+      
+      if (!videoSrc) {
+        setVideoSrc(videoUrl);
+        setDuration(clipDuration);
+      }
+      
       toast({
-        title: "No video loaded",
-        description: "Please upload or select a video first",
+        title: "Video added to timeline",
+        description: `${file.name} has been added to track ${track + 1}`,
+      });
+    };
+  };
+
+  const handleChatCommand = (command: string) => {
+    if (!selectedClipId) {
+      toast({
+        title: "No clip selected",
+        description: "Please select a clip on the timeline first",
         variant: "destructive",
       });
       return;
     }
     
-    // Process the command and create appropriate clips
+    console.log("Processing command:", command);
+    
     const lowerCommand = command.toLowerCase();
     
-    // Simulate processing the command with loading state
+    const selectedClip = clips.find(clip => clip.id === selectedClipId);
+    if (!selectedClip) return;
+    
     toast({
       title: "Processing command",
       description: "Analyzing your edit request...",
     });
     
     setTimeout(() => {
-      const newClips: Clip[] = [];
+      const updatedClips = clips.map(clip => {
+        if (clip.id !== selectedClipId) return clip;
+        
+        let type = clip.type;
+        let name = clip.name;
+        
+        if (lowerCommand.includes("trim") || lowerCommand.includes("cut")) {
+          type = "trim";
+          name = "Trimmed " + (clip.name || "");
+        } 
+        else if (lowerCommand.includes("highlight")) {
+          type = "highlight";
+          name = "Highlighted " + (clip.name || "");
+        }
+        else if (lowerCommand.includes("subtitle") || lowerCommand.includes("caption")) {
+          type = "subtitle";
+          name = "Subtitled " + (clip.name || "");
+        }
+        else if (lowerCommand.includes("music") || lowerCommand.includes("audio")) {
+          type = "audio";
+          name = "Audio Added " + (clip.name || "");
+        }
+        else if (lowerCommand.includes("color") || lowerCommand.includes("grade")) {
+          type = "color";
+          name = "Color Graded " + (clip.name || "");
+        }
+        else if (lowerCommand.includes("crop") || lowerCommand.includes("vertical")) {
+          type = "crop";
+          name = "Cropped " + (clip.name || "");
+        }
+        
+        return { ...clip, type, name };
+      });
       
-      // Simple command parser
-      if (lowerCommand.includes("trim") || lowerCommand.includes("cut")) {
-        // Trim command creates a single clip
-        const start = Math.max(0, currentTime);
-        const end = Math.min(start + 10, duration);
-        
-        newClips.push({
-          id: `trim-${Date.now()}`,
-          start,
-          end,
-          track: 0,
-          type: "trim",
-          name: "Trim"
-        });
-      } 
-      else if (lowerCommand.includes("highlight")) {
-        // Highlight creates several clips
-        for (let i = 0; i < 3; i++) {
-          const start = Math.random() * (duration * 0.8);
-          const clipDuration = Math.random() * 5 + 2; // 2-7 seconds
-          const end = Math.min(start + clipDuration, duration);
-          
-          newClips.push({
-            id: `highlight-${Date.now()}-${i}`,
-            start,
-            end,
-            track: 0,
-            type: "highlight",
-            name: "Highlight"
-          });
-        }
-      }
-      else if (lowerCommand.includes("subtitle") || lowerCommand.includes("caption")) {
-        // Subtitle adds a text track
-        newClips.push({
-          id: `subtitle-${Date.now()}`,
-          start: 0,
-          end: duration,
-          track: 1, // Text track
-          type: "subtitle",
-          name: "Subtitles"
-        });
-      }
-      else if (lowerCommand.includes("music") || lowerCommand.includes("audio")) {
-        // Music adds an audio track
-        newClips.push({
-          id: `audio-${Date.now()}`,
-          start: 0,
-          end: duration,
-          track: 2, // Audio track
-          type: "audio",
-          name: "Music"
-        });
-      }
-      else if (lowerCommand.includes("silence") || lowerCommand.includes("quiet")) {
-        // Auto-cut silence creates multiple short clips
-        const silenceClips = [];
-        let position = 0;
-        
-        while (position < duration) {
-          const clipLength = Math.random() * 8 + 3; // 3-11 sec clips
-          const gap = Math.random() * 1 + 0.2; // 0.2-1.2 sec gaps (silence)
-          
-          silenceClips.push({
-            id: `silence-cut-${Date.now()}-${silenceClips.length}`,
-            start: position,
-            end: Math.min(position + clipLength, duration),
-            track: 0,
-            type: "cut",
-            name: "Cut"
-          });
-          
-          position += clipLength + gap;
-        }
-        
-        newClips.push(...silenceClips);
-      }
-      else if (lowerCommand.includes("color") || lowerCommand.includes("grade")) {
-        // Color grade effect on whole video
-        newClips.push({
-          id: `color-${Date.now()}`,
-          start: 0,
-          end: duration,
-          track: 3, // Effects track
-          type: "color",
-          name: "Color Grade"
-        });
-      }
-      else if (lowerCommand.includes("crop") || lowerCommand.includes("vertical")) {
-        // Vertical crop effect
-        newClips.push({
-          id: `crop-${Date.now()}`,
-          start: 0,
-          end: duration,
-          track: 4, // Format track
-          type: "crop",
-          name: "Vertical Crop"
-        });
-      }
-      else {
-        // Generic command - create 2-3 random clips
-        const clipCount = Math.floor(Math.random() * 2) + 2;
-        for (let i = 0; i < clipCount; i++) {
-          const trackIndex = Math.floor(Math.random() * 3);
-          const start = Math.random() * (duration * 0.8);
-          const clipDuration = Math.random() * 10 + 5; // 5-15 seconds
-          const end = Math.min(start + clipDuration, duration);
-          
-          newClips.push({
-            id: `clip-${Date.now()}-${i}`,
-            start,
-            end,
-            track: trackIndex,
-            type: "generic",
-            name: "Edit"
-          });
-        }
-      }
-      
-      setClips((prevClips) => [...prevClips, ...newClips]);
+      setClips(updatedClips);
       
       toast({
         title: "Edit applied",
-        description: `Added ${newClips.length} new segments to the timeline`,
+        description: `Applied ${lowerCommand} to the selected clip`,
       });
-      
     }, 1500);
   };
 
@@ -275,12 +213,10 @@ const Editor = () => {
       </div>
       
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel - Asset browser */}
         <div className="w-1/5 min-w-[240px] hidden md:block">
           <AssetPanel onVideoSelect={handleVideoSelect} />
         </div>
         
-        {/* Center panel - Video player and timeline */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 min-h-0">
             <VideoPlayer
@@ -297,11 +233,13 @@ const Editor = () => {
               currentTime={currentTime}
               onTimeUpdate={setCurrentTime}
               clips={clips}
+              onClipSelect={setSelectedClipId}
+              selectedClipId={selectedClipId}
+              onVideoDrop={handleVideoDrop}
             />
           </div>
         </div>
         
-        {/* Right panel - Chat interface */}
         <div className="w-1/5 min-w-[280px] hidden md:block">
           <ChatPanel onChatCommand={handleChatCommand} />
         </div>
