@@ -11,6 +11,8 @@ interface TimelineProps {
     start: number;
     end: number;
     track: number;
+    type?: string;
+    name?: string;
   }[];
 }
 
@@ -24,6 +26,16 @@ const Timeline = ({
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
   const trackCount = 6;
+  
+  // Track labels
+  const trackLabels = [
+    "Video",
+    "Text",
+    "Audio",
+    "Effects",
+    "Format",
+    "Other"
+  ];
 
   // Format time as mm:ss
   const formatTime = (seconds: number) => {
@@ -48,6 +60,28 @@ const Timeline = ({
       );
     }
     return markers;
+  };
+
+  // Get color for clip based on type
+  const getClipStyle = (type?: string) => {
+    switch (type) {
+      case "trim":
+        return "from-blue-700 to-blue-500";
+      case "highlight":
+        return "from-yellow-700 to-yellow-500";
+      case "subtitle":
+        return "from-green-700 to-green-500";
+      case "audio":
+        return "from-purple-700 to-purple-500";
+      case "color":
+        return "from-orange-700 to-orange-500";
+      case "crop":
+        return "from-pink-700 to-pink-500";
+      case "cut":
+        return "from-red-700 to-red-500";
+      default:
+        return "from-cre8r-violet-dark to-cre8r-violet";
+    }
   };
 
   // Handle playhead position when timeline is clicked
@@ -128,30 +162,35 @@ const Timeline = ({
             {generateTimeMarkers()}
           </div>
 
-          {/* Tracks */}
+          {/* Tracks with labels */}
           <div className="flex flex-col gap-1">
             {Array.from({ length: trackCount }).map((_, index) => (
-              <div 
-                key={index} 
-                className="h-12 bg-cre8r-gray-800 rounded border border-cre8r-gray-700 relative"
-              >
-                {/* Render clips for this track */}
-                {clips.filter(clip => clip.track === index).map((clip) => (
-                  <div
-                    key={clip.id}
-                    className="video-timeline-marker absolute h-10 my-1 rounded opacity-80 overflow-hidden"
-                    style={{
-                      left: `${(clip.start / duration) * 100}%`,
-                      width: `${((clip.end - clip.start) / duration) * 100}%`,
-                    }}
-                  >
-                    <div className="h-full w-full bg-gradient-to-r from-cre8r-violet-dark to-cre8r-violet flex items-center justify-center">
-                      <span className="text-xs text-white truncate px-1">
-                        {formatTime(clip.end - clip.start)}
-                      </span>
+              <div key={index} className="flex">
+                <div className="w-20 h-12 flex items-center justify-center bg-cre8r-gray-800 border-r border-cre8r-gray-700 text-xs text-cre8r-gray-300 font-medium">
+                  {trackLabels[index] || `Track ${index + 1}`}
+                </div>
+                <div 
+                  className="flex-1 h-12 bg-cre8r-gray-800 rounded-r border border-cre8r-gray-700 relative"
+                >
+                  {/* Render clips for this track */}
+                  {clips.filter(clip => clip.track === index).map((clip) => (
+                    <div
+                      key={clip.id}
+                      className="video-timeline-marker absolute h-10 my-1 rounded opacity-90 overflow-hidden cursor-pointer hover:opacity-100 hover:ring-1 hover:ring-white transition-opacity"
+                      style={{
+                        left: `${(clip.start / duration) * 100}%`,
+                        width: `${((clip.end - clip.start) / duration) * 100}%`,
+                      }}
+                      title={clip.name || "Edit"}
+                    >
+                      <div className={`h-full w-full bg-gradient-to-r ${getClipStyle(clip.type)} flex items-center justify-center px-2`}>
+                        <span className="text-xs text-white truncate font-medium">
+                          {clip.name || formatTime(clip.end - clip.start)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ))}
           </div>

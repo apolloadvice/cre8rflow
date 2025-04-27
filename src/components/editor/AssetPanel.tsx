@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search, Upload, RefreshCcw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type VideoAsset = {
   id: string;
@@ -12,6 +13,7 @@ type VideoAsset = {
   thumbnail: string;
   duration: number;
   uploaded: Date;
+  src?: string;
 };
 
 const placeholderVideos: VideoAsset[] = [
@@ -24,11 +26,17 @@ const placeholderVideos: VideoAsset[] = [
   },
 ];
 
-const AssetPanel = () => {
+interface AssetPanelProps {
+  onVideoSelect: (video: VideoAsset) => void;
+}
+
+const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("uploaded");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedVideos, setUploadedVideos] = useState<VideoAsset[]>(placeholderVideos);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -47,13 +55,113 @@ const AssetPanel = () => {
     e.stopPropagation();
     setIsDragging(false);
     
-    // In a real implementation, we would handle file uploads here
-    console.log("Files dropped:", e.dataTransfer.files);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files);
+    }
+  };
+
+  const handleFileUpload = (files: FileList) => {
+    const file = files[0];
+
+    if (!file) return;
+
+    // Check if file is a video
+    if (!file.type.startsWith("video/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a video file (MP4 or MOV)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (max 1024MB)
+    if (file.size > 1024 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 1024MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    // Create URL for the video file
+    const videoUrl = URL.createObjectURL(file);
+
+    // Create a video element to get duration
+    const video = document.createElement("video");
+    video.src = videoUrl;
+    
+    video.onloadedmetadata = () => {
+      const newVideo: VideoAsset = {
+        id: `upload-${Date.now()}`,
+        name: file.name,
+        thumbnail: "",
+        duration: video.duration,
+        uploaded: new Date(),
+        src: videoUrl,
+      };
+
+      // Generate thumbnail from the video
+      setTimeout(() => {
+        try {
+          video.currentTime = 1; // Set to 1 second to avoid black frame
+          
+          video.onseeked = () => {
+            // Create canvas and draw video frame
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get thumbnail as data URL
+            newVideo.thumbnail = canvas.toDataURL("image/jpeg");
+            
+            // Add to uploaded videos
+            setUploadedVideos(prev => [newVideo, ...prev]);
+            setIsUploading(false);
+            
+            // Auto-select the uploaded video
+            onVideoSelect(newVideo);
+            
+            toast({
+              title: "Video uploaded",
+              description: `${file.name} has been added to your assets`,
+            });
+          };
+        } catch (error) {
+          console.error("Error generating thumbnail:", error);
+          
+          // Fallback if thumbnail generation fails
+          newVideo.thumbnail = "https://i.imgur.com/JcGrHtu.jpg"; // Placeholder thumbnail
+          setUploadedVideos(prev => [newVideo, ...prev]);
+          setIsUploading(false);
+          onVideoSelect(newVideo);
+          
+          toast({
+            title: "Video uploaded",
+            description: `${file.name} has been added to your assets`,
+          });
+        }
+      }, 500);
+    };
+    
+    video.onerror = () => {
+      setIsUploading(false);
+      toast({
+        title: "Upload failed",
+        description: "There was an error processing your video",
+        variant: "destructive",
+      });
+    };
   };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
@@ -84,8 +192,9 @@ const AssetPanel = () => {
               className="hidden"
               accept="video/mp4,video/quicktime"
               onChange={(e) => {
-                // In a real implementation, we would handle file uploads here
-                console.log("Files selected:", e.target.files);
+                if (e.target.files) {
+                  handleFileUpload(e.target.files);
+                }
               }}
               id="video-upload"
             />
@@ -94,8 +203,9 @@ const AssetPanel = () => {
               size="sm"
               onClick={() => document.getElementById("video-upload")?.click()}
               className="mt-2"
+              disabled={isUploading}
             >
-              Select File
+              {isUploading ? "Uploading..." : "Select File"}
             </Button>
           </div>
         </div>
@@ -155,10 +265,7 @@ const AssetPanel = () => {
                 <div 
                   key={video.id} 
                   className="bg-cre8r-gray-700 rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-cre8r-violet transition-all group"
-                  onClick={() => {
-                    // In a real implementation, we would handle video selection here
-                    console.log("Video selected:", video);
-                  }}
+                  onClick={() => onVideoSelect(video)}
                 >
                   <div className="relative">
                     <img 
