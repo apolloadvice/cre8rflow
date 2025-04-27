@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -132,19 +133,22 @@ const Timeline = ({
   }, [isDragging, duration, onTimeUpdate]);
 
   // Handle drag over for video dropping
-  const handleDragOver = (e: React.DragEvent, trackIndex: number) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.currentTarget.style.backgroundColor = "rgba(139, 92, 246, 0.1)"; // Highlight drop zone
+    const target = e.currentTarget as HTMLDivElement;
+    target.style.backgroundColor = "rgba(139, 92, 246, 0.1)"; // Highlight drop zone
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.currentTarget.style.backgroundColor = "";
+    const target = e.currentTarget as HTMLDivElement;
+    target.style.backgroundColor = "";
   };
 
-  const handleDrop = (e: React.DragEvent, trackIndex: number) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, trackIndex: number) => {
     e.preventDefault();
-    e.currentTarget.style.backgroundColor = "";
+    const target = e.currentTarget as HTMLDivElement;
+    target.style.backgroundColor = "";
     
     const file = e.dataTransfer.files[0];
     if (!file || !file.type.startsWith("video/")) return;
