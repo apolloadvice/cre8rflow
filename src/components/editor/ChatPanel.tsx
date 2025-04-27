@@ -180,3 +180,6 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
       </div>
     </div>
   );
+};
+
+export default ChatPanel;
