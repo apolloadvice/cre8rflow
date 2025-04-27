@@ -165,6 +165,13 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Make video item draggable
+  const handleDragStart = (e: React.DragEvent, video: VideoAsset) => {
+    // Store video data in dataTransfer
+    e.dataTransfer.setData("application/json", JSON.stringify(video));
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
   return (
     <div className="h-full flex flex-col bg-cre8r-gray-800 border-r border-cre8r-gray-700">
       <div className="p-4 border-b border-cre8r-gray-700">
@@ -266,6 +273,8 @@ const AssetPanel = ({ onVideoSelect }: AssetPanelProps) => {
                   key={video.id} 
                   className="bg-cre8r-gray-700 rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-cre8r-violet transition-all group"
                   onClick={() => onVideoSelect(video)}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, video)}
                 >
                   <div className="relative">
                     <img 

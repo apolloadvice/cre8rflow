@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ interface TimelineProps {
   onClipSelect?: (clipId: string | null) => void;
   selectedClipId?: string | null;
   onVideoDrop?: (file: File, track: number, time: number) => void;
+  onVideoAssetDrop?: (videoAsset: any, track: number, time: number) => void;
 }
 
 const Timeline = ({
@@ -26,6 +28,7 @@ const Timeline = ({
   onClipSelect,
   selectedClipId,
   onVideoDrop,
+  onVideoAssetDrop,
 }: TimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -149,16 +152,38 @@ const Timeline = ({
     const target = e.currentTarget as HTMLDivElement;
     target.style.backgroundColor = "";
     
-    const file = e.dataTransfer.files[0];
-    if (!file || !file.type.startsWith("video/")) return;
+    // Check if this is a file drop or a video asset drop
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      // This is a file drop
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.type.startsWith("video/")) return;
 
-    const rect = timelineRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const rect = timelineRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    const x = e.clientX - rect.left;
-    const dropTime = (x / rect.width) * duration;
+      const x = e.clientX - rect.left;
+      const dropTime = (x / rect.width) * duration;
 
-    onVideoDrop?.(file, trackIndex, dropTime);
+      onVideoDrop?.(file, trackIndex, dropTime);
+    } else {
+      // Check if this is a video asset drop
+      try {
+        const videoAssetData = e.dataTransfer.getData("application/json");
+        if (videoAssetData) {
+          const videoAsset = JSON.parse(videoAssetData);
+          
+          const rect = timelineRef.current?.getBoundingClientRect();
+          if (!rect) return;
+
+          const x = e.clientX - rect.left;
+          const dropTime = (x / rect.width) * duration;
+          
+          onVideoAssetDrop?.(videoAsset, trackIndex, dropTime);
+        }
+      } catch (error) {
+        console.error("Error parsing dragged video asset:", error);
+      }
+    }
   };
 
   return (

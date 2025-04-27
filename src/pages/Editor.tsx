@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
@@ -95,6 +96,52 @@ const Editor = () => {
       toast({
         title: "Video added to timeline",
         description: `${file.name} has been added to track ${track + 1}`,
+      });
+    };
+  };
+
+  const handleVideoAssetDrop = (videoAsset: VideoAsset, track: number, dropTime: number) => {
+    // Set video source if needed
+    const videoSrc = videoAsset.src || (videoAsset.id === "1" ? SAMPLE_VIDEO_URL : undefined);
+    if (!videoSrc) {
+      toast({
+        title: "Error",
+        description: "Video source not found",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create a video element to get the duration
+    const video = document.createElement("video");
+    video.src = videoSrc;
+    
+    video.onloadedmetadata = () => {
+      // Create a new clip for the timeline
+      const clipDuration = videoAsset.duration || video.duration;
+      const newClip: Clip = {
+        id: `clip-${Date.now()}`,
+        start: dropTime,
+        end: dropTime + clipDuration,
+        track,
+        type: "video",
+        name: videoAsset.name
+      };
+      
+      setClips(prevClips => [...prevClips, newClip]);
+      setSelectedClipId(newClip.id);
+      
+      toast({
+        title: "Video added to timeline",
+        description: `${videoAsset.name} has been added to track ${track + 1}`,
+      });
+    };
+    
+    video.onerror = () => {
+      toast({
+        title: "Error",
+        description: "Failed to load video for timeline",
+        variant: "destructive"
       });
     };
   };
@@ -236,6 +283,7 @@ const Editor = () => {
               onClipSelect={setSelectedClipId}
               selectedClipId={selectedClipId}
               onVideoDrop={handleVideoDrop}
+              onVideoAssetDrop={handleVideoAssetDrop}
             />
           </div>
         </div>
