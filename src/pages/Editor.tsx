@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
@@ -7,7 +6,7 @@ import VideoPlayer from "@/components/editor/VideoPlayer";
 import Timeline from "@/components/editor/Timeline";
 import ChatPanel from "@/components/editor/ChatPanel";
 import { Button } from "@/components/ui/button";
-import { Save, FilmReel } from "lucide-react";
+import { Save, Film } from "lucide-react";
 
 // Sample video URL for demo purposes
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
@@ -93,7 +92,7 @@ const Editor = () => {
       <div className="flex justify-between items-center px-4 h-14 border-b border-cre8r-gray-700 bg-cre8r-gray-800">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-cre8r-violet rounded-full flex items-center justify-center">
-            <FilmReel className="h-5 w-5 text-white" />
+            <Film className="h-5 w-5 text-white" />
           </div>
           <h1 className="text-lg font-semibold">Untitled Project</h1>
         </div>

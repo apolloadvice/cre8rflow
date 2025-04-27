@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Clock, FilmReel } from "lucide-react";
+import { Plus, Search, Clock, Film } from "lucide-react";
 
 interface Project {
   id: string;
@@ -137,7 +136,7 @@ const Dashboard = () => {
               </CardContent>
               <CardHeader className="p-4 pb-0">
                 <CardTitle className="text-lg flex gap-2 items-center">
-                  <FilmReel className="h-5 w-5 text-cre8r-violet" />
+                  <Film className="h-5 w-5 text-cre8r-violet" />
                   {project.name}
                 </CardTitle>
               </CardHeader>
