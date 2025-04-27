@@ -1,6 +1,7 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { debounce } from "lodash";
 
 interface TimelineProps {
   duration: number;
@@ -34,6 +35,7 @@ const Timeline = ({
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
   const trackCount = 6;
+  const [thumbnailsVisible, setThumbnailsVisible] = useState(true);
   
   // Track labels
   const trackLabels = [
@@ -87,10 +89,36 @@ const Timeline = ({
         return "from-pink-700 to-pink-500";
       case "cut":
         return "from-red-700 to-red-500";
+      case "fade":
+        return "from-indigo-700 to-indigo-500";
+      case "zoom":
+        return "from-emerald-700 to-emerald-500";
+      case "speed":
+        return "from-amber-700 to-amber-500";
+      case "brightness":
+        return "from-sky-700 to-sky-500";
+      case "textOverlay":
+        return "from-fuchsia-700 to-fuchsia-500";
       default:
         return "from-cre8r-violet-dark to-cre8r-violet";
     }
   };
+
+  // Debounced function to handle thumbnail updates on zoom changes
+  const debouncedThumbnailUpdate = useCallback(
+    debounce((newZoom) => {
+      // This would trigger a re-fetch of thumbnails at appropriate resolution
+      console.log("Updating thumbnails for zoom level:", newZoom);
+    }, 300),
+    []
+  );
+
+  // Effect to handle zoom changes for thumbnails
+  useEffect(() => {
+    if (thumbnailsVisible) {
+      debouncedThumbnailUpdate(zoom);
+    }
+  }, [zoom, thumbnailsVisible, debouncedThumbnailUpdate]);
 
   // Handle playhead position when timeline is clicked
   const handleTimelineClick = (e: React.MouseEvent) => {
@@ -186,6 +214,22 @@ const Timeline = ({
     }
   };
 
+  // Get thumbnail background position based on current time
+  const getThumbnailStyle = (clipInfo: any) => {
+    if (!thumbnailsVisible) return {};
+    
+    // This would use real sprite data in a production implementation
+    // The background-position calculation would be based on the actual VTT data
+    const spritePosition = -(Math.floor(clipInfo.start) % 10) * 320;
+    
+    return {
+      backgroundImage: `url(https://example.com/sprites/sample_sprite.png)`,
+      backgroundPosition: `${spritePosition}px 0`,
+      backgroundSize: 'auto 100%',
+      backgroundRepeat: 'no-repeat'
+    };
+  };
+
   return (
     <div className="h-full flex flex-col bg-cre8r-gray-900 border-t border-cre8r-gray-700 select-none">
       <div className="flex items-center justify-between p-2 bg-cre8r-gray-800 border-b border-cre8r-gray-700">
@@ -202,6 +246,12 @@ const Timeline = ({
             onClick={() => setZoom(Math.min(2, zoom + 0.1))}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          </button>
+          <button
+            className={`p-1 hover:bg-cre8r-gray-700 rounded text-xs ${thumbnailsVisible ? 'text-cre8r-violet' : 'text-cre8r-gray-400'}`}
+            onClick={() => setThumbnailsVisible(!thumbnailsVisible)}
+          >
+            {thumbnailsVisible ? 'Hide Thumbnails' : 'Show Thumbnails'}
           </button>
         </div>
         <div className="text-sm text-cre8r-gray-200">
@@ -245,11 +295,12 @@ const Timeline = ({
                       style={{
                         left: `${(clip.start / duration) * 100}%`,
                         width: `${((clip.end - clip.start) / duration) * 100}%`,
+                        ...getThumbnailStyle(clip)
                       }}
                       onClick={() => onClipSelect?.(clip.id)}
                       title={clip.name || "Edit"}
                     >
-                      <div className={`h-full w-full bg-gradient-to-r ${getClipStyle(clip.type)} flex items-center justify-center px-2`}>
+                      <div className={`h-full w-full bg-gradient-to-r ${getClipStyle(clip.type)} flex items-center justify-center px-2 bg-opacity-70`}>
                         <span className="text-xs text-white truncate font-medium">
                           {clip.name || formatTime(clip.end - clip.start)}
                         </span>

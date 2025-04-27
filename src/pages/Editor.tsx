@@ -8,6 +8,8 @@ import Timeline from "@/components/editor/Timeline";
 import ChatPanel from "@/components/editor/ChatPanel";
 import { Button } from "@/components/ui/button";
 import { Save, Film } from "lucide-react";
+import { useThumbnails } from "@/hooks/useThumbnails";
+import { useCommand, Operation } from "@/hooks/useCommand";
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -37,6 +39,10 @@ const Editor = () => {
   const [clips, setClips] = useState<Clip[]>([]);
   const [activeVideoAsset, setActiveVideoAsset] = useState<VideoAsset | null>(null);
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  
+  // Integrate our new hooks
+  const { thumbnailData } = useThumbnails(activeVideoAsset?.id);
+  const { executeCommand } = useCommand("current-project");
 
   useEffect(() => {
     if (!activeVideoAsset) {
@@ -52,6 +58,14 @@ const Editor = () => {
     }
   }, [toast, activeVideoAsset]);
 
+  // Effect to handle thumbnails when they're available
+  useEffect(() => {
+    if (thumbnailData) {
+      console.log("Thumbnails loaded:", thumbnailData);
+      // In a real implementation, this would update the UI to show thumbnails
+    }
+  }, [thumbnailData]);
+
   const handleVideoSelect = (video: VideoAsset) => {
     setClips([]);
     setActiveVideoAsset(video);
@@ -66,6 +80,8 @@ const Editor = () => {
       title: "Video selected",
       description: `${video.name} is now ready to edit`,
     });
+    
+    // In a real implementation, this would trigger a fetch for thumbnails
   };
 
   const handleVideoDrop = (file: File, track: number, dropTime: number) => {
@@ -97,6 +113,9 @@ const Editor = () => {
         title: "Video added to timeline",
         description: `${file.name} has been added to track ${track + 1}`,
       });
+      
+      // In a real implementation, this would trigger thumbnail generation
+      // simulateGenerateThumbnails(file);
     };
   };
 
@@ -146,11 +165,11 @@ const Editor = () => {
     };
   };
 
-  const handleChatCommand = (command: string) => {
-    if (!selectedClipId) {
+  const handleChatCommand = async (command: string) => {
+    if (!selectedClipId && clips.length === 0) {
       toast({
-        title: "No clip selected",
-        description: "Please select a clip on the timeline first",
+        title: "No video available",
+        description: "Please add a video to the timeline first",
         variant: "destructive",
       });
       return;
@@ -158,58 +177,60 @@ const Editor = () => {
     
     console.log("Processing command:", command);
     
-    const lowerCommand = command.toLowerCase();
+    // Use our command hook to process the NLP request
+    const result = await executeCommand(command);
     
-    const selectedClip = clips.find(clip => clip.id === selectedClipId);
-    if (!selectedClip) return;
-    
-    toast({
-      title: "Processing command",
-      description: "Analyzing your edit request...",
+    if (result && result.operations.length > 0) {
+      // Apply the operations to the timeline
+      applyOperationsToTimeline(result.operations);
+    }
+  };
+
+  // New function to apply AI operations to the timeline
+  const applyOperationsToTimeline = (operations: Operation[]) => {
+    // Convert operations to clips
+    const newClips = operations.map(op => {
+      const clipId = `clip-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      return {
+        id: clipId,
+        start: op.start_sec,
+        end: op.end_sec,
+        track: determineTrackForEffect(op.effect),
+        type: op.effect,
+        name: `${op.effect.charAt(0).toUpperCase() + op.effect.slice(1)} Effect`
+      };
     });
     
-    setTimeout(() => {
-      const updatedClips = clips.map(clip => {
-        if (clip.id !== selectedClipId) return clip;
-        
-        let type = clip.type;
-        let name = clip.name;
-        
-        if (lowerCommand.includes("trim") || lowerCommand.includes("cut")) {
-          type = "trim";
-          name = "Trimmed " + (clip.name || "");
-        } 
-        else if (lowerCommand.includes("highlight")) {
-          type = "highlight";
-          name = "Highlighted " + (clip.name || "");
-        }
-        else if (lowerCommand.includes("subtitle") || lowerCommand.includes("caption")) {
-          type = "subtitle";
-          name = "Subtitled " + (clip.name || "");
-        }
-        else if (lowerCommand.includes("music") || lowerCommand.includes("audio")) {
-          type = "audio";
-          name = "Audio Added " + (clip.name || "");
-        }
-        else if (lowerCommand.includes("color") || lowerCommand.includes("grade")) {
-          type = "color";
-          name = "Color Graded " + (clip.name || "");
-        }
-        else if (lowerCommand.includes("crop") || lowerCommand.includes("vertical")) {
-          type = "crop";
-          name = "Cropped " + (clip.name || "");
-        }
-        
-        return { ...clip, type, name };
-      });
-      
-      setClips(updatedClips);
+    setClips(prevClips => [...prevClips, ...newClips]);
+    
+    if (newClips.length > 0) {
+      setSelectedClipId(newClips[0].id);
       
       toast({
-        title: "Edit applied",
-        description: `Applied ${lowerCommand} to the selected clip`,
+        title: "Edits applied",
+        description: `${newClips.length} operations added to timeline`,
       });
-    }, 1500);
+    }
+  };
+  
+  // Helper function to determine which track to use based on effect type
+  const determineTrackForEffect = (effect: string): number => {
+    switch (effect) {
+      case "cut":
+      case "speed":
+        return 0; // Video track
+      case "textOverlay":
+      case "caption":
+        return 1; // Text track
+      case "fade":
+        return 3; // Effects track
+      case "colorGrade":
+      case "brightness":
+        return 4; // Format track
+      default:
+        return 2; // Other track
+    }
   };
 
   const handleSaveProject = () => {

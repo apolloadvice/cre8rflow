@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ArrowUp, Bot } from "lucide-react";
+import { useCommand } from "@/hooks/useCommand";
 
 interface Message {
   id: string;
@@ -32,13 +33,14 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { executeCommand, isProcessing } = useCommand("current-project-id");
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -54,17 +56,22 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
     setInput("");
     setIsThinking(true);
 
-    // Simulate assistant response after thinking
-    setTimeout(() => {
-      setIsThinking(false);
-      const responseMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "I've analyzed your video and applied the requested edits.",
-        sender: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages((prevMessages) => [...prevMessages, responseMessage]);
-    }, 1500);
+    // Process the command with our hook
+    const result = await executeCommand(input);
+    
+    setIsThinking(false);
+    const responseContent = result 
+      ? `I've applied your edit request: ${result.operations.length} operations created.`
+      : "I processed your request but couldn't apply any edits.";
+      
+    const responseMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      content: responseContent,
+      sender: "assistant",
+      timestamp: new Date(),
+    };
+    
+    setMessages((prevMessages) => [...prevMessages, responseMessage]);
   };
 
   const handleQuickAction = (action: string) => {
@@ -126,7 +133,7 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
                   <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
                   <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
                   <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                  <span className="ml-1 text-sm">Thinking</span>
+                  <span className="ml-1 text-sm">Processing your edit request</span>
                 </div>
               </div>
             )}
@@ -158,12 +165,13 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               className="bg-cre8r-gray-700 border-cre8r-gray-600 focus:border-cre8r-violet focus:ring-cre8r-violet"
+              disabled={isProcessing || isThinking}
             />
             <Button
               type="submit"
               size="icon"
               className="bg-cre8r-violet hover:bg-cre8r-violet-dark"
-              disabled={!input.trim()}
+              disabled={!input.trim() || isProcessing || isThinking}
             >
               <ArrowUp className="h-4 w-4" />
             </Button>
@@ -172,6 +180,3 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
       </div>
     </div>
   );
-};
-
-export default ChatPanel;
