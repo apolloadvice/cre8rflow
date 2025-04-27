@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -207,7 +206,7 @@ const Timeline = ({
                 </div>
                 <div 
                   className="flex-1 h-12 bg-cre8r-gray-800 rounded-r border border-cre8r-gray-700 relative"
-                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
                 >
