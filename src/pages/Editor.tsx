@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
@@ -11,11 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Save, Film } from "lucide-react";
 import UndoIcon from "@/components/icons/UndoIcon";
 import RedoIcon from "@/components/icons/RedoIcon";
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
 import { useThumbnails } from "@/hooks/useThumbnails";
 import { useCommand, Operation } from "@/hooks/useCommand";
 import { 
   useEditorStore,
   useKeyboardShortcuts,
+  useLayout,
+  useLayoutSetter,
   Clip
 } from "@/store/editorStore";
 
@@ -23,6 +27,10 @@ const Editor = () => {
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
+  
+  // Get layout state and setter
+  const layout = useLayout();
+  const setLayoutSize = useLayoutSetter();
   
   // Get state and actions from our store
   const {
@@ -241,6 +249,20 @@ const Editor = () => {
     });
   };
 
+  // Handlers for layout changes
+  const handleSidebarResize = (sizes: number[]) => {
+    setLayoutSize('sidebar', sizes[0]);
+  };
+
+  const handleMainPaneResize = (sizes: number[]) => {
+    setLayoutSize('preview', sizes[0]);
+    setLayoutSize('chat', sizes[1]);
+  };
+
+  const handleTimelineResize = (sizes: number[]) => {
+    setLayoutSize('timeline', sizes[1]);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-cre8r-dark text-white">
       <NavBar />
@@ -292,47 +314,90 @@ const Editor = () => {
         </div>
       </div>
       
-      <div className="flex flex-1 overflow-hidden">
-        {/* Updated: Left sidebar now has AssetPanel and new AssetsIconBar */}
-        <div className="flex w-1/5 min-w-[240px] hidden md:flex overflow-hidden">
-          <div className="w-14 border-r border-cre8r-gray-700">
+      {/* Main resizable layout */}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup
+          direction="horizontal" 
+          onLayout={handleSidebarResize}
+        >
+          {/* Left sidebar with assets */}
+          <ResizablePanel 
+            defaultSize={layout.sidebar} 
+            minSize={15}
+            className="flex"
+          >
             <AssetsIconBar />
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <AssetPanel onVideoSelect={handleVideoSelect} />
-          </div>
-        </div>
-        
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 min-h-0">
-            <VideoPlayer
-              ref={videoRef}
-              src={videoSrc}
-              currentTime={currentTime}
-              onTimeUpdate={setCurrentTime}
-              onDurationChange={setDuration}
-              className="h-full"
-              rightControl={<TimecodeDisplay />}
-            />
-          </div>
-          <div className="h-64">
-            <Timeline
-              ref={timelineRef}
-              duration={duration}
-              currentTime={currentTime}
-              onTimeUpdate={setCurrentTime}
-              clips={clips}
-              onClipSelect={setSelectedClipId}
-              selectedClipId={selectedClipId}
-              onVideoDrop={handleVideoDrop}
-              onVideoAssetDrop={handleVideoAssetDrop}
-            />
-          </div>
-        </div>
-        
-        <div className="w-1/5 min-w-[280px] hidden md:block">
-          <ChatPanel onChatCommand={handleChatCommand} />
-        </div>
+          </ResizablePanel>
+          
+          {/* Divider between sidebar and main content */}
+          <ResizableHandle withHandle className="bg-cre8r-gray-700 hover:bg-cre8r-violet transition-colors" />
+          
+          {/* Main content area with nested panel groups */}
+          <ResizablePanel>
+            <ResizablePanelGroup 
+              direction="vertical"
+              onLayout={handleTimelineResize}
+            >
+              {/* Top section with preview and chat */}
+              <ResizablePanel>
+                <ResizablePanelGroup 
+                  direction="horizontal"
+                  onLayout={handleMainPaneResize}
+                >
+                  {/* Video preview */}
+                  <ResizablePanel 
+                    defaultSize={layout.preview} 
+                    minSize={50}
+                    className="flex-1 min-h-0"
+                  >
+                    <VideoPlayer
+                      ref={videoRef}
+                      src={videoSrc}
+                      currentTime={currentTime}
+                      onTimeUpdate={setCurrentTime}
+                      onDurationChange={setDuration}
+                      className="h-full"
+                      rightControl={<TimecodeDisplay />}
+                    />
+                  </ResizablePanel>
+                  
+                  {/* Divider between preview and chat */}
+                  <ResizableHandle withHandle className="bg-cre8r-gray-700 hover:bg-cre8r-violet transition-colors" />
+                  
+                  {/* Chat panel */}
+                  <ResizablePanel 
+                    defaultSize={layout.chat} 
+                    minSize={20}
+                    className="w-1/5 min-w-[280px]"
+                  >
+                    <ChatPanel onChatCommand={handleChatCommand} />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </ResizablePanel>
+              
+              {/* Divider between top section and timeline */}
+              <ResizableHandle withHandle className="bg-cre8r-gray-700 hover:bg-cre8r-violet transition-colors" />
+              
+              {/* Timeline section */}
+              <ResizablePanel 
+                defaultSize={layout.timeline} 
+                minSize={15}
+              >
+                <Timeline
+                  ref={timelineRef}
+                  duration={duration}
+                  currentTime={currentTime}
+                  onTimeUpdate={setCurrentTime}
+                  clips={clips}
+                  onClipSelect={setSelectedClipId}
+                  selectedClipId={selectedClipId}
+                  onVideoDrop={handleVideoDrop}
+                  onVideoAssetDrop={handleVideoAssetDrop}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
