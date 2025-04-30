@@ -162,7 +162,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
           isControlsVisible ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="flex items-center justify-between mb-2">
+        {/* Updated control bar with centered play/pause and timecode */}
+        <div className="grid grid-cols-3 items-center mb-2">
+          {/* Left section - Undo/Redo */}
           <div className="flex items-center gap-2">
             {/* Undo button */}
             <Button
@@ -185,7 +187,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
             >
               <RedoIcon className="h-5 w-5" />
             </Button>
-            
+          </div>
+          
+          {/* Center section - Play/Pause and Timecode */}
+          <div className="flex items-center justify-center gap-2">
             {/* Play/Pause button */}
             <Button
               size="icon"
@@ -201,10 +206,11 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
             </Button>
             
             {/* Timecode display (rightControl) */}
-            {rightControl && <div className="ml-2">{rightControl}</div>}
+            {rightControl && <div>{rightControl}</div>}
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right section - Volume, Download, Settings */}
+          <div className="flex items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
