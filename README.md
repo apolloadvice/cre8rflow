@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -60,6 +61,14 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Keyboard Shortcuts
+
+The video editor supports the following keyboard shortcuts:
+
+- **Undo**: Ctrl/Cmd + Z
+- **Redo**: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
+- **Delete selected clip**: Backspace or Delete
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/0d30b6cc-44a5-4e63-92e9-05c316abef90) and click on Share -> Publish.
@@ -71,3 +80,4 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+

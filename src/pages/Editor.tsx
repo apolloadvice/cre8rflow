@@ -1,47 +1,75 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
 import AssetPanel from "@/components/editor/AssetPanel";
+import AssetsTabs from "@/components/editor/AssetsTabs";
 import VideoPlayer from "@/components/editor/VideoPlayer";
 import Timeline from "@/components/editor/Timeline";
 import ChatPanel from "@/components/editor/ChatPanel";
+import TimecodeDisplay from "@/components/editor/TimecodeDisplay";
 import { Button } from "@/components/ui/button";
 import { Save, Film } from "lucide-react";
+import UndoIcon from "@/components/icons/UndoIcon";
+import RedoIcon from "@/components/icons/RedoIcon";
 import { useThumbnails } from "@/hooks/useThumbnails";
 import { useCommand, Operation } from "@/hooks/useCommand";
-
-interface Clip {
-  id: string;
-  start: number;
-  end: number;
-  track: number;
-  type: string;
-  name: string;
-}
-
-interface VideoAsset {
-  id: string;
-  name: string;
-  thumbnail: string;
-  duration: number;
-  uploaded: Date;
-  src?: string;
-}
+import { 
+  useEditorStore,
+  useKeyboardShortcuts,
+  Clip
+} from "@/store/editorStore";
 
 const Editor = () => {
   const { toast } = useToast();
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [videoSrc, setVideoSrc] = useState<string | undefined>(undefined);
-  const [clips, setClips] = useState<Clip[]>([]);
-  const [activeVideoAsset, setActiveVideoAsset] = useState<VideoAsset | null>(null);
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const timelineRef = useRef<HTMLDivElement | null>(null);
   
-  // Integrate our new hooks
+  // Get state and actions from our store
+  const {
+    clips, 
+    currentTime, 
+    duration, 
+    selectedClipId,
+    activeVideoAsset,
+    videoSrc,
+    setClips,
+    setCurrentTime,
+    setDuration,
+    setSelectedClipId,
+    setActiveVideoAsset,
+    setVideoSrc,
+    undo,
+    redo,
+    history
+  } = useEditorStore();
+  
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts();
+  
+  // Integrate our hooks
   const { thumbnailData } = useThumbnails(activeVideoAsset?.id);
   const { executeCommand } = useCommand("current-project");
 
-  const handleVideoSelect = (video: VideoAsset) => {
+  // Animation frame for syncing video time with store
+  useEffect(() => {
+    let animationFrameId: number;
+    
+    const updateTime = () => {
+      if (videoRef.current) {
+        setCurrentTime(videoRef.current.currentTime);
+      }
+      animationFrameId = requestAnimationFrame(updateTime);
+    };
+    
+    animationFrameId = requestAnimationFrame(updateTime);
+    
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [setCurrentTime]);
+
+  const handleVideoSelect = (video: any) => {
     setClips([]);
     setActiveVideoAsset(video);
     
@@ -72,7 +100,7 @@ const Editor = () => {
         name: file.name
       };
       
-      setClips(prevClips => [...prevClips, newClip]);
+      setClips([...clips, newClip]);
       setSelectedClipId(newClip.id);
       
       if (!videoSrc) {
@@ -84,13 +112,10 @@ const Editor = () => {
         title: "Video added to timeline",
         description: `${file.name} has been added to track ${track + 1}`,
       });
-      
-      // In a real implementation, this would trigger thumbnail generation
-      // simulateGenerateThumbnails(file);
     };
   };
 
-  const handleVideoAssetDrop = (videoAsset: VideoAsset, track: number, dropTime: number) => {
+  const handleVideoAssetDrop = (videoAsset: any, track: number, dropTime: number) => {
     // Set video source if needed
     const videoSrc = videoAsset.src;
     if (!videoSrc) {
@@ -118,7 +143,7 @@ const Editor = () => {
         name: videoAsset.name
       };
       
-      setClips(prevClips => [...prevClips, newClip]);
+      setClips([...clips, newClip]);
       setSelectedClipId(newClip.id);
       
       toast({
@@ -157,7 +182,7 @@ const Editor = () => {
     }
   };
 
-  // New function to apply AI operations to the timeline
+  // Apply AI operations to the timeline
   const applyOperationsToTimeline = (operations: Operation[]) => {
     // Convert operations to clips
     const newClips = operations.map(op => {
@@ -173,7 +198,7 @@ const Editor = () => {
       };
     });
     
-    setClips(prevClips => [...prevClips, ...newClips]);
+    setClips([...clips, ...newClips]);
     
     if (newClips.length > 0) {
       setSelectedClipId(newClips[0].id);
@@ -185,7 +210,6 @@ const Editor = () => {
     }
   };
   
-  // Helper function to determine which track to use based on effect type
   const determineTrackForEffect = (effect: string): number => {
     switch (effect) {
       case "cut":
@@ -236,6 +260,24 @@ const Editor = () => {
           <Button
             variant="outline"
             className="border-cre8r-gray-600 hover:border-cre8r-violet"
+            onClick={() => undo()}
+            disabled={history.past.length === 0}
+          >
+            <UndoIcon className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="border-cre8r-gray-600 hover:border-cre8r-violet"
+            onClick={() => redo()}
+            disabled={history.future.length === 0}
+          >
+            <RedoIcon className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="border-cre8r-gray-600 hover:border-cre8r-violet"
             onClick={handleSaveProject}
           >
             <Save className="h-4 w-4 mr-2" />
@@ -252,22 +294,26 @@ const Editor = () => {
       </div>
       
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/5 min-w-[240px] hidden md:block">
+        <div className="w-1/5 min-w-[240px] hidden md:block overflow-y-auto">
           <AssetPanel onVideoSelect={handleVideoSelect} />
+          <AssetsTabs />
         </div>
         
         <div className="flex-1 flex flex-col">
           <div className="flex-1 min-h-0">
             <VideoPlayer
+              ref={videoRef}
               src={videoSrc}
               currentTime={currentTime}
               onTimeUpdate={setCurrentTime}
               onDurationChange={setDuration}
               className="h-full"
+              rightControl={<TimecodeDisplay />}
             />
           </div>
           <div className="h-64">
             <Timeline
+              ref={timelineRef}
               duration={duration}
               currentTime={currentTime}
               onTimeUpdate={setCurrentTime}

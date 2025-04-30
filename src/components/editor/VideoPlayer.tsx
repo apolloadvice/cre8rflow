@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, Volume2, VolumeX, Download, Settings } from "lucide-react";
@@ -11,63 +11,72 @@ interface VideoPlayerProps {
   onTimeUpdate: (time: number) => void;
   onDurationChange: (duration: number) => void;
   className?: string;
+  rightControl?: React.ReactNode;
 }
 
-const VideoPlayer = ({
+const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   src,
   currentTime,
   onTimeUpdate,
   onDurationChange,
   className,
-}: VideoPlayerProps) => {
+  rightControl
+}, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
+  
+  // Use the forwarded ref or fall back to internal ref
+  const resolvedRef = (ref as React.RefObject<HTMLVideoElement>) || videoRef;
 
   // Update video currentTime when prop changes (e.g., from timeline)
   useEffect(() => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.5) {
-      videoRef.current.currentTime = currentTime;
+    const video = resolvedRef.current;
+    if (video && Math.abs(video.currentTime - currentTime) > 0.5) {
+      video.currentTime = currentTime;
     }
-  }, [currentTime]);
+  }, [currentTime, resolvedRef]);
 
   // Toggle play/pause
   const togglePlayPause = () => {
-    if (!videoRef.current) return;
+    const video = resolvedRef.current;
+    if (!video) return;
     
     if (isPlaying) {
-      videoRef.current.pause();
+      video.pause();
     } else {
-      videoRef.current.play();
+      video.play();
     }
     setIsPlaying(!isPlaying);
   };
 
   // Toggle mute
   const toggleMute = () => {
-    if (!videoRef.current) return;
+    const video = resolvedRef.current;
+    if (!video) return;
     
-    videoRef.current.muted = !isMuted;
+    video.muted = !isMuted;
     setIsMuted(!isMuted);
   };
 
   // Handle volume change
   const handleVolumeChange = (value: number[]) => {
-    if (!videoRef.current) return;
+    const video = resolvedRef.current;
+    if (!video) return;
     
     const newVolume = value[0];
-    videoRef.current.volume = newVolume;
+    video.volume = newVolume;
     setVolume(newVolume);
     
     if (newVolume === 0 && !isMuted) {
       setIsMuted(true);
-      videoRef.current.muted = true;
+      video.muted = true;
     } else if (newVolume > 0 && isMuted) {
       setIsMuted(false);
-      videoRef.current.muted = false;
+      video.muted = false;
     }
   };
 
@@ -86,7 +95,7 @@ const VideoPlayer = ({
 
   // Setup initial event listeners
   useEffect(() => {
-    const video = videoRef.current;
+    const video = resolvedRef.current;
     if (!video) return;
 
     const handleTimeUpdate = () => {
@@ -116,7 +125,7 @@ const VideoPlayer = ({
         window.clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [onTimeUpdate, onDurationChange]);
+  }, [onTimeUpdate, onDurationChange, resolvedRef]);
 
   return (
     <div 
@@ -125,7 +134,7 @@ const VideoPlayer = ({
     >
       {src ? (
         <video 
-          ref={videoRef}
+          ref={resolvedRef}
           className="max-h-full max-w-full"
           src={src}
           onClick={togglePlayPause}
@@ -162,6 +171,8 @@ const VideoPlayer = ({
           </Button>
 
           <div className="flex items-center gap-3">
+            {rightControl}
+            
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
@@ -207,6 +218,8 @@ const VideoPlayer = ({
       </div>
     </div>
   );
-};
+});
+
+VideoPlayer.displayName = "VideoPlayer";
 
 export default VideoPlayer;

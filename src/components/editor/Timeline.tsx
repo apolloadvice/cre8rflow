@@ -1,7 +1,8 @@
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { debounce } from "lodash";
+import Playhead from "./Playhead";
 
 interface TimelineProps {
   duration: number;
@@ -21,7 +22,7 @@ interface TimelineProps {
   onVideoAssetDrop?: (videoAsset: any, track: number, time: number) => void;
 }
 
-const Timeline = ({
+const Timeline = forwardRef<HTMLDivElement, TimelineProps>(({
   duration,
   currentTime,
   onTimeUpdate,
@@ -30,12 +31,14 @@ const Timeline = ({
   selectedClipId,
   onVideoDrop,
   onVideoAssetDrop,
-}: TimelineProps) => {
+}, ref) => {
   const timelineRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
   const trackCount = 6;
   const [thumbnailsVisible, setThumbnailsVisible] = useState(true);
+  
+  // Use the forwarded ref or fall back to internal ref
+  const resolvedRef = (ref as React.RefObject<HTMLDivElement>) || timelineRef;
   
   // Track labels
   const trackLabels = [
@@ -120,47 +123,15 @@ const Timeline = ({
     }
   }, [zoom, thumbnailsVisible, debouncedThumbnailUpdate]);
 
-  // Handle playhead position when timeline is clicked
+  // Handle timeline click to update current time
   const handleTimelineClick = (e: React.MouseEvent) => {
-    if (!timelineRef.current) return;
+    if (!resolvedRef.current) return;
 
-    const rect = timelineRef.current.getBoundingClientRect();
+    const rect = resolvedRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const clickedTime = (x / rect.width) * duration;
     onTimeUpdate(Math.max(0, Math.min(duration, clickedTime)));
   };
-
-  // Handle mouse down on playhead
-  const handlePlayheadMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  // Handle mouse move when dragging playhead
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !timelineRef.current) return;
-
-      const rect = timelineRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const newTime = (x / rect.width) * duration;
-      onTimeUpdate(Math.max(0, Math.min(duration, newTime)));
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging, duration, onTimeUpdate]);
 
   // Handle drag over for video dropping
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -186,7 +157,7 @@ const Timeline = ({
       const file = e.dataTransfer.files[0];
       if (!file || !file.type.startsWith("video/")) return;
 
-      const rect = timelineRef.current?.getBoundingClientRect();
+      const rect = resolvedRef.current?.getBoundingClientRect();
       if (!rect) return;
 
       const x = e.clientX - rect.left;
@@ -196,20 +167,39 @@ const Timeline = ({
     } else {
       // Check if this is a video asset drop
       try {
-        const videoAssetData = e.dataTransfer.getData("application/json");
-        if (videoAssetData) {
-          const videoAsset = JSON.parse(videoAssetData);
+        const assetData = e.dataTransfer.getData("application/json");
+        if (assetData) {
+          const asset = JSON.parse(assetData);
           
-          const rect = timelineRef.current?.getBoundingClientRect();
-          if (!rect) return;
+          if (asset.type === "ASSET") {
+            // This is an asset from our AssetsTabs
+            console.log("Asset dropped:", asset.asset);
+            // Here you would handle the asset drop based on its type
+            // For now, we'll just pass it to onVideoAssetDrop if it's a video
+            if (asset.asset.type === "video") {
+              const rect = resolvedRef.current?.getBoundingClientRect();
+              if (!rect) return;
+              
+              const x = e.clientX - rect.left;
+              const dropTime = (x / rect.width) * duration;
+              
+              onVideoAssetDrop?.(asset.asset, trackIndex, dropTime);
+            }
+          } else {
+            // This is a regular video asset drop
+            const videoAsset = JSON.parse(assetData);
+            
+            const rect = resolvedRef.current?.getBoundingClientRect();
+            if (!rect) return;
 
-          const x = e.clientX - rect.left;
-          const dropTime = (x / rect.width) * duration;
-          
-          onVideoAssetDrop?.(videoAsset, trackIndex, dropTime);
+            const x = e.clientX - rect.left;
+            const dropTime = (x / rect.width) * duration;
+            
+            onVideoAssetDrop?.(videoAsset, trackIndex, dropTime);
+          }
         }
       } catch (error) {
-        console.error("Error parsing dragged video asset:", error);
+        console.error("Error parsing dragged asset:", error);
       }
     }
   };
@@ -262,7 +252,7 @@ const Timeline = ({
       <div className="relative flex-1 overflow-x-auto overflow-y-hidden p-2 bg-cre8r-gray-900">
         {/* Timeline with markers */}
         <div 
-          ref={timelineRef}
+          ref={resolvedRef}
           className="relative h-full"
           style={{ width: `${100 * zoom}%`, minWidth: "100%" }}
           onClick={handleTimelineClick}
@@ -313,20 +303,13 @@ const Timeline = ({
           </div>
 
           {/* Playhead */}
-          <div 
-            className={cn(
-              "absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 cursor-ew-resize",
-              isDragging && "bg-red-400"
-            )}
-            style={{ left: `${(currentTime / duration) * 100}%` }}
-            onMouseDown={handlePlayheadMouseDown}
-          >
-            <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 -mt-1.5 absolute top-6"></div>
-          </div>
+          <Playhead timelineRef={resolvedRef} />
         </div>
       </div>
     </div>
   );
-};
+});
+
+Timeline.displayName = "Timeline";
 
 export default Timeline;
