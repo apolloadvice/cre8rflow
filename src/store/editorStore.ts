@@ -21,8 +21,8 @@ interface EditorState {
   
   // History management
   history: {
-    past: EditorState[];
-    future: EditorState[];
+    past: Omit<EditorState, 'history'>[];
+    future: Omit<EditorState, 'history'>[];
   };
 }
 
@@ -47,7 +47,7 @@ interface EditorStore extends EditorState {
   recalculateDuration: () => void;
 }
 
-// Omit history from the state to clone
+// Define StateWithoutHistory type that can be used for history entries
 type StateWithoutHistory = Omit<EditorState, 'history'>;
 
 // Clone state without circular references
@@ -132,12 +132,12 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       history: {
         past: [...state.history.past, currentStateWithoutHistory],
         future: [],
-      },
+      }
     }));
   },
   
   undo: () => {
-    const { history, ...currentState } = get();
+    const { history } = get();
     const { past, future } = history;
     
     if (past.length === 0) return;
@@ -226,4 +226,3 @@ export const useKeyboardShortcuts = () => {
     };
   }, [handleKeyDown]);
 };
-

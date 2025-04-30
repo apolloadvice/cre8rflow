@@ -1,5 +1,6 @@
 
 import { formatTimecode } from '../utils/formatTimecode';
+import '@testing-library/jest-dom';
 
 describe('formatTimecode', () => {
   test('formats 0 seconds correctly', () => {
