@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
 import AssetPanel from "@/components/editor/AssetPanel";
-import AssetsTabs from "@/components/editor/AssetsTabs";
+import AssetsIconBar from "@/components/editor/AssetsIconBar";
 import VideoPlayer from "@/components/editor/VideoPlayer";
 import Timeline from "@/components/editor/Timeline";
 import ChatPanel from "@/components/editor/ChatPanel";
@@ -294,9 +293,14 @@ const Editor = () => {
       </div>
       
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/5 min-w-[240px] hidden md:block overflow-y-auto">
-          <AssetPanel onVideoSelect={handleVideoSelect} />
-          <AssetsTabs />
+        {/* Updated: Left sidebar now has AssetPanel and new AssetsIconBar */}
+        <div className="flex w-1/5 min-w-[240px] hidden md:flex overflow-hidden">
+          <div className="w-14 border-r border-cre8r-gray-700">
+            <AssetsIconBar />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <AssetPanel onVideoSelect={handleVideoSelect} />
+          </div>
         </div>
         
         <div className="flex-1 flex flex-col">
