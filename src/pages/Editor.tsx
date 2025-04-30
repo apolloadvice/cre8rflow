@@ -1,8 +1,6 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import NavBar from "@/components/NavBar";
-import AssetPanel from "@/components/editor/AssetPanel";
 import AssetsIconBar from "@/components/editor/AssetsIconBar";
 import VideoPlayer from "@/components/editor/VideoPlayer";
 import Timeline from "@/components/editor/Timeline";
