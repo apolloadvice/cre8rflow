@@ -27,9 +27,12 @@ const AssetsIconBar = () => {
   const { setActiveVideoAsset, setVideoSrc } = useEditorStore();
 
   const handleIconClick = (tabId: string) => {
-    // If the video tab is clicked, open the upload dialog
+    // If the video tab is clicked, open the upload dialog if there are no videos
     if (tabId === 'video') {
-      setIsVideoDialogOpen(true);
+      setActiveTab(tabId); // Always set the video tab as active when clicked
+      if (uploadedVideos.length === 0) {
+        setIsVideoDialogOpen(true);
+      }
       return;
     }
     
@@ -185,6 +188,11 @@ const AssetsIconBar = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Handle upload button click
+  const handleUploadClick = () => {
+    setIsVideoDialogOpen(true);
+  };
+
   const tabIcons = [
     { id: 'video', name: 'Video', icon: Video },
     { id: 'text', name: 'Text', icon: Text },
@@ -192,7 +200,7 @@ const AssetsIconBar = () => {
     { id: 'media', name: 'Media', icon: FileVideo },
     { id: 'captions', name: 'Captions', icon: Captions },
     { id: 'layers', name: 'Layers', icon: Layers },
-    { id: 'templates', name: 'Templates', icon: Layers } // Replaced Templates with Layers as a fallback
+    { id: 'templates', name: 'Templates', icon: Layers }
   ];
 
   return (
@@ -229,43 +237,103 @@ const AssetsIconBar = () => {
       {/* Asset Items Panel - shown when a tab is active */}
       {activeTab && (
         <div className="bg-cre8r-gray-800 w-64 overflow-y-auto">
-          <div className="p-4 border-b border-cre8r-gray-700">
+          <div className="p-4 border-b border-cre8r-gray-700 flex justify-between items-center">
             <h3 className="font-medium text-white">
               {tabIcons.find(tab => tab.id === activeTab)?.name}
             </h3>
-          </div>
-          <div className="p-2 space-y-1">
-            {getTabItems(activeTab).map(item => (
-              <div 
-                key={item.id}
-                className="group flex items-center p-2 rounded hover:bg-cre8r-gray-700 cursor-grab transition-colors"
-                draggable
-                onDragStart={(e) => handleDragStart(e, item)}
+            {activeTab === 'video' && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleUploadClick}
+                className="text-xs border-cre8r-gray-600 hover:border-cre8r-violet"
               >
-                {item.thumbnail ? (
-                  <div className="h-10 w-10 mr-3 bg-cre8r-gray-700 rounded overflow-hidden flex-shrink-0">
-                    <img 
-                      src={item.thumbnail} 
-                      alt={item.name} 
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className={cn(
-                    "h-8 w-8 mr-3 rounded flex items-center justify-center flex-shrink-0",
-                    item.type === 'text' ? "bg-blue-600" : 
-                    item.type === 'audio' ? "bg-purple-600" : "bg-green-600"
-                  )}>
-                    <span className="text-xs font-bold text-white">
-                      {item.type === 'text' ? 'T' : 
-                       item.type === 'audio' ? 'A' : 'V'}
-                    </span>
-                  </div>
-                )}
-                <span className="text-sm truncate">{item.name}</span>
-              </div>
-            ))}
+                <Upload className="h-3 w-3 mr-1" /> Upload
+              </Button>
+            )}
           </div>
+          
+          {/* Video assets display */}
+          {activeTab === 'video' && (
+            <div className="p-2 space-y-2">
+              {uploadedVideos.length === 0 ? (
+                <div className="text-center py-8 text-cre8r-gray-400 text-sm">
+                  <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No videos uploaded yet</p>
+                  <Button 
+                    variant="link" 
+                    onClick={handleUploadClick} 
+                    className="text-cre8r-violet mt-2"
+                  >
+                    Upload a video
+                  </Button>
+                </div>
+              ) : (
+                uploadedVideos.map(video => (
+                  <div 
+                    key={video.id}
+                    className="group flex flex-col p-2 rounded hover:bg-cre8r-gray-700 cursor-grab transition-colors"
+                    draggable
+                    onDragStart={(e) => handleVideoDragStart(e, video)}
+                    onClick={() => {
+                      setActiveVideoAsset(video);
+                      if (video.src) {
+                        setVideoSrc(video.src);
+                      }
+                    }}
+                  >
+                    <div className="relative mb-1 rounded overflow-hidden">
+                      <img 
+                        src={video.thumbnail} 
+                        alt={video.name} 
+                        className="w-full h-16 object-cover"
+                      />
+                      <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 rounded">
+                        {formatDuration(video.duration)}
+                      </div>
+                    </div>
+                    <div className="truncate text-xs">{video.name}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+          
+          {/* Other asset tabs display */}
+          {activeTab !== 'video' && (
+            <div className="p-2 space-y-1">
+              {getTabItems(activeTab).map(item => (
+                <div 
+                  key={item.id}
+                  className="group flex items-center p-2 rounded hover:bg-cre8r-gray-700 cursor-grab transition-colors"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, item)}
+                >
+                  {item.thumbnail ? (
+                    <div className="h-10 w-10 mr-3 bg-cre8r-gray-700 rounded overflow-hidden flex-shrink-0">
+                      <img 
+                        src={item.thumbnail} 
+                        alt={item.name} 
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className={cn(
+                      "h-8 w-8 mr-3 rounded flex items-center justify-center flex-shrink-0",
+                      item.type === 'text' ? "bg-blue-600" : 
+                      item.type === 'audio' ? "bg-purple-600" : "bg-green-600"
+                    )}>
+                      <span className="text-xs font-bold text-white">
+                        {item.type === 'text' ? 'T' : 
+                         item.type === 'audio' ? 'A' : 'V'}
+                      </span>
+                    </div>
+                  )}
+                  <span className="text-sm truncate">{item.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
