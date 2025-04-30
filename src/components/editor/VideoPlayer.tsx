@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, Volume2, VolumeX, Download, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import UndoIcon from "@/components/icons/UndoIcon";
+import RedoIcon from "@/components/icons/RedoIcon";
+import { useEditorStore } from "@/store/editorStore";
 
 interface VideoPlayerProps {
   src?: string;
@@ -28,6 +31,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   const [isMuted, setIsMuted] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
+  
+  // Get undo/redo functions from store
+  const { undo, redo, history } = useEditorStore();
   
   // Use the forwarded ref or fall back to internal ref
   const resolvedRef = (ref as React.RefObject<HTMLVideoElement>) || videoRef;
@@ -157,22 +163,48 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
         )}
       >
         <div className="flex items-center justify-between mb-2">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
-            onClick={togglePlayPause}
-          >
-            {isPlaying ? (
-              <Pause className="h-5 w-5" />
-            ) : (
-              <Play className="h-5 w-5" />
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Undo button */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
+              onClick={undo}
+              disabled={history.past.length === 0}
+            >
+              <UndoIcon className="h-5 w-5" />
+            </Button>
+            
+            {/* Redo button */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
+              onClick={redo}
+              disabled={history.future.length === 0}
+            >
+              <RedoIcon className="h-5 w-5" />
+            </Button>
+            
+            {/* Play/Pause button */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
+              onClick={togglePlayPause}
+            >
+              {isPlaying ? (
+                <Pause className="h-5 w-5" />
+              ) : (
+                <Play className="h-5 w-5" />
+              )}
+            </Button>
+            
+            {/* Timecode display (rightControl) */}
+            {rightControl && <div className="ml-2">{rightControl}</div>}
+          </div>
 
           <div className="flex items-center gap-3">
-            {rightControl}
-            
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
