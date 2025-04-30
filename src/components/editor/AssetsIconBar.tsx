@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Text, Music, FileVideo, Layers, Captions, Templates, Video } from 'lucide-react';
+import { Text, Music, FileVideo, Layers, Captions, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AssetItem, assetTabs } from '@/config/assetsConfig';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +33,7 @@ const AssetsIconBar = () => {
     { id: 'media', name: 'Media', icon: FileVideo },
     { id: 'captions', name: 'Captions', icon: Captions },
     { id: 'layers', name: 'Layers', icon: Layers },
-    { id: 'templates', name: 'Templates', icon: Templates }
+    { id: 'templates', name: 'Templates', icon: Layers } // Replaced Templates with Layers as a fallback
   ];
 
   return (
