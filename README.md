@@ -13,22 +13,19 @@
    cd cre8rflow
    ```
 
-2. Create and configure the `.env` file:
+2. Set up your environment:
    ```bash
+   # 1. Copy environment template and fill in your secrets
    cp .env.example .env
-   # Edit .env with your actual API keys and credentials
-   ```
 
-3. Start the development environment:
-   ```bash
+   # 2. Build & start the whole stack
    make dev
-   ```
-   This will:
-   - Build the backend from `./backend` directory
-   - Build the frontend from `./frontend` directory
-   - Start both services with hot-reload enabled
 
-4. Open your browser:
+   # 3. Visit the app
+   open http://localhost:5173
+   ```
+
+3. The development environment will be ready with:
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8000/docs
 
