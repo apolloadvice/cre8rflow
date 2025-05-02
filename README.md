@@ -28,6 +28,12 @@
    - Frontend → http://localhost:5173
    - API docs → http://localhost:8000/docs
 
+### Project Structure
+
+- `backend/app` is the root package; avoid adding another nested "backend/" layer
+- `frontend` contains the React/Vite application
+- Both services support hot-reload for development
+
 ### Using Cursor/VS Code with Dev Container
 
 1. Install the "Remote - Containers" extension in VS Code/Cursor
