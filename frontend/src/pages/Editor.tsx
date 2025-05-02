@@ -187,6 +187,21 @@ const Editor = () => {
     }
   };
 
+  // New handler for when a video has been processed
+  const handleVideoProcessed = (processedVideoUrl: string) => {
+    if (processedVideoUrl) {
+      console.log("Video processed, updating source:", processedVideoUrl);
+      
+      // Update the video source to show the processed video
+      setVideoSrc(processedVideoUrl);
+      
+      toast({
+        title: "Video processed",
+        description: "Your edited video is now ready to view",
+      });
+    }
+  };
+
   // Apply AI operations to the timeline
   const applyOperationsToTimeline = (operations: Operation[]) => {
     // Convert operations to clips
@@ -368,7 +383,10 @@ const Editor = () => {
                     minSize={20}
                     className="w-1/5 min-w-[280px]"
                   >
-                    <ChatPanel onChatCommand={handleChatCommand} />
+                    <ChatPanel 
+                      onChatCommand={handleChatCommand} 
+                      onVideoProcessed={handleVideoProcessed} 
+                    />
                   </ResizablePanel>
                 </ResizablePanelGroup>
               </ResizablePanel>

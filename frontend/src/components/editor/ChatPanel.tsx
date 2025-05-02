@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,7 @@ interface Message {
 
 interface ChatPanelProps {
   onChatCommand: (command: string) => void;
+  onVideoProcessed?: (videoUrl: string) => void; // New prop to handle processed video
 }
 
 const quickActions = [
@@ -28,7 +28,7 @@ const quickActions = [
   "Vertical Crop"
 ];
 
-const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
+const ChatPanel = ({ onChatCommand, onVideoProcessed }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -60,8 +60,14 @@ const ChatPanel = ({ onChatCommand }: ChatPanelProps) => {
     const result = await executeCommand(input);
     
     setIsThinking(false);
+    
+    // If we have a processed video URL, send it to parent component
+    if (result?.videoUrl && onVideoProcessed) {
+      onVideoProcessed(result.videoUrl);
+    }
+    
     const responseContent = result 
-      ? `I've applied your edit request: ${result.operations.length} operations created.`
+      ? `I've applied your edit request: ${result.operations.length} operations applied directly to your video.`
       : "I processed your request but couldn't apply any edits.";
       
     const responseMessage: Message = {
