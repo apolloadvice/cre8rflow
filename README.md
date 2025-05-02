@@ -23,10 +23,14 @@
    ```bash
    make dev
    ```
+   This will:
+   - Build the backend from `./backend` directory
+   - Build the frontend from `./frontend` directory
+   - Start both services with hot-reload enabled
 
 4. Open your browser:
    - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
+   - Backend API: http://localhost:8000/docs
 
 ### Using Cursor/VS Code with Dev Container
 
