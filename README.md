@@ -15,19 +15,18 @@
 
 2. Set up your environment:
    ```bash
-   # 1. Copy environment template and fill in your secrets
    cp .env.example .env
+   ```
+   Add your real secrets inside `.env`.
 
-   # 2. Build & start the whole stack
+3. Build & start everything:
+   ```bash
    make dev
-
-   # 3. Visit the app
-   open http://localhost:5173
    ```
 
-3. The development environment will be ready with:
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000/docs
+4. Open the app:
+   - Frontend → http://localhost:5173
+   - API docs → http://localhost:8000/docs
 
 ### Using Cursor/VS Code with Dev Container
 
