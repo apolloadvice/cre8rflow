@@ -2,22 +2,20 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID, uuid4
 from sqlmodel import SQLModel, Field, Relationship
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import numpy as np
+from sqlalchemy import Column, Float, ForeignKey
+from sqlalchemy.dialects.postgresql import ARRAY
 
 class VideoBase(SQLModel):
     title: str
     file_path: str
     file_url: str
     duration: float
-    parent_id: Optional[UUID] = None
 
 class Video(VideoBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    parent: Optional["Video"] = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "Video.parent_id"}
-    )
     transcripts: List["Transcript"] = Relationship(back_populates="video")
     effects: List["Effect"] = Relationship(back_populates="video")
 
@@ -33,12 +31,14 @@ class Video(VideoBase, table=True):
         )
 
 class Transcript(SQLModel, table=True):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     video_id: UUID = Field(foreign_key="video.id")
     sentence: str
-    start: float
-    end: float
-    embedding: np.ndarray = Field(sa_column=Column(ARRAY(Float)))
+    start_time: float
+    end_time: float
+    embedding: List[float] = Field(sa_column=Column(ARRAY(Float)))
     video: Video = Relationship(back_populates="transcripts")
 
     @classmethod
@@ -48,16 +48,16 @@ class Transcript(SQLModel, table=True):
         pass
 
 class EffectBase(SQLModel):
-    video_id: UUID
     type: str
-    start: Optional[float] = None
-    end: Optional[float] = None
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
     factor: Optional[float] = None
     text: Optional[str] = None
 
 class Effect(EffectBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    video_id: UUID = Field(foreign_key="video.id")
     video: Video = Relationship(back_populates="effects")
 
 class CommandRequest(BaseModel):

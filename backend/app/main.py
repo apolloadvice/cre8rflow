@@ -22,4 +22,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(nlp_edit.router, prefix="/nlp") 
+app.include_router(nlp_edit.router, prefix="/nlp")
+
+# Expose app at module level
+__all__ = ["app"] 

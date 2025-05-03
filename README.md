@@ -45,6 +45,33 @@
    - Node.js with npm
    - Ports 8000 and 5173 forwarded automatically
 
+### 🚀 Local Backend Development
+
+For faster backend development without Docker:
+
+1. Set up the development environment:
+   ```bash
+   cd backend
+   cp .env.example .env.dev
+   ```
+
+2. Start the FastAPI server with hot-reload:
+   ```bash
+   make dev-backend
+   ```
+
+3. Test the API endpoints:
+   ```bash
+   curl -X POST http://localhost:8000/nlp/apply \
+        -H "Content-Type: application/json" \
+        -d '{"command":"cut 0-2s"}'
+   ```
+
+4. Run unit tests:
+   ```bash
+   make test
+   ```
+
 ### Stopping the Development Environment
 
 To stop the development environment:

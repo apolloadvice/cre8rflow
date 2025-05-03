@@ -3,6 +3,8 @@ from uuid import uuid4
 from ..app.core.models import Video, Effect
 from ..app.core.video_editor import apply_command
 from ..app.core.command_parser import parse_command
+from fastapi.testclient import TestClient
+from app.main import app
 
 @pytest.fixture
 def sample_video(tmp_path):
@@ -61,3 +63,12 @@ def test_apply_volume_command(sample_video):
     new_video = apply_command(sample_video, "boost volume 200%")
     assert new_video.parent_id == sample_video.id
     # Note: We can't easily verify the volume change without playing the video 
+
+client = TestClient(app)
+
+def test_apply_command():
+    """Test the /nlp/apply endpoint."""
+    payload = {"command": "cut 0-2s"}
+    r = client.post("/nlp/apply", json=payload)
+    assert r.status_code == 200
+    assert r.json()["status"] == "Command applied" 
