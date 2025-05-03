@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: { 
     host: "::",
-    port: 8080 
+    port: 8080,
+    allowedHosts: ['.lovableproject.com'] // allow all Loveable URLs
   }
 }))
