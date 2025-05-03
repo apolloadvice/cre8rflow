@@ -15,11 +15,15 @@ export default defineConfig(({ mode }) => ({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: { 
-    host: "::",
-    port: 8080,
-    allowedHosts: [
-      '0d30b6cc-44a5-4e63-92e9-05c316abef90.lovableproject.com'
-    ]
+  server: {
+    host: '0.0.0.0',          // bind on all interfaces
+    port: 8080,               // keep the same port the Dockerfile expects
+    strictPort: true,         // fail if 8080 is busy
+    cors: true,               // let Lovable's proxy iframe the app
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',      // bypass websocket host check
+      clientPort: 443         // works for both HTTP and HTTPS previews
+    }
   }
 }))
