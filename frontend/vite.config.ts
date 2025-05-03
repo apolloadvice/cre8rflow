@@ -16,6 +16,13 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    allowedHosts: true
+  host: true,              // Allow external access from any IP
+  port: 8080,              // Optional, or keep 5173 if default
+  strictPort: true,
+  origin: undefined,       // Let Vite infer origin (do NOT hardcode Loveable domain)
+  hmr: {
+    host: 'localhost',     // Helps bypass websocket-origin checks
+    protocol: 'ws',
+    }
   }
 }))
