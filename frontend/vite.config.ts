@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     host: '0.0.0.0',          // bind on all interfaces
-    port: 8080,               // keep the same port the Dockerfile expects
-    strictPort: true,         // fail if 8080 is busy
+    port: 5173,               // use the port specified in package.json
+    strictPort: true,         // fail if port is busy
     cors: true,               // let Lovable's proxy iframe the app
     allowedHosts: true,       // accept any host
     hmr: {
@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
   },
   preview: {
     host: '0.0.0.0',
-    port: 8080,
+    port: 5173,
     strictPort: true,
     allowedHosts: true,       // preview server (needed since Vite 5.4.12+)
     cors: true
