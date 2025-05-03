@@ -1,0 +1,20 @@
+{
+    "name": "Cre8rFlow Development",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "backend",
+    "workspaceFolder": "/app",
+    "runServices": ["backend", "frontend"],
+    "forwardPorts": [8000, 5173],
+    "postCreateCommand": "pip install ruff black pytest && npm install -g npm@latest",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    }
+} 

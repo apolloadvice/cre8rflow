@@ -9,12 +9,9 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=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
-      - SUPABASE_URL=https://fgvyotgowmcwcphsctlc.supabase.co
     depends_on:
       - redis
+      - postgres
     volumes:
       - ./backend/app:/app/app
     restart: unless-stopped
@@ -28,13 +25,10 @@ services:
     command: python -c "from app.services.worker import run_worker; run_worker()"
     env_file:
       - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=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
-      - SUPABASE_URL=https://fgvyotgowmcwcphsctlc.supabase.co
     depends_on:
       - redis
       - api
+      - postgres
     volumes:
       - ./backend/app:/app/app
     restart: unless-stopped
@@ -56,10 +50,8 @@ services:
     image: postgres:13
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=cre8rflow
+    env_file:
+      - .env
     volumes:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
