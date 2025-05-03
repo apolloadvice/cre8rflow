@@ -15,14 +15,11 @@ export default defineConfig(({ mode }) => ({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: {
-  host: true,              // Allow external access from any IP
-  port: 8080,              // Optional, or keep 5173 if default
-  strictPort: true,
-  origin: undefined,       // Let Vite infer origin (do NOT hardcode Loveable domain)
-  hmr: {
-    host: 'localhost',     // Helps bypass websocket-origin checks
-    protocol: 'ws',
+  server: { 
+    host: "::",
+    port: 8080,
+    allowedHosts: [
+      '0d30b6cc-44a5-4e63-92e9-05c316abef90.lovableproject.com'
+    ]
   }
-}
 }))
