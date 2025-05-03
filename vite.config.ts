@@ -15,5 +15,5 @@ export default defineConfig({
     outDir: 'dist',
   },
   root: './',
-  server: { port: 5173 }
+  server: { port: 8080 }
 })
