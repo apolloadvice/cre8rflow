@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     host: '0.0.0.0',          
-    port: 8080,               // Set port to 8080 to match the root config
+    port: 8080,               
     strictPort: true,         
     cors: true,               
     allowedHosts: true,       
@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
   },
   preview: {
     host: '0.0.0.0',
-    port: 8080,               // Match the server port
+    port: 8080,               
     strictPort: true,
     allowedHosts: true,       
     cors: true
