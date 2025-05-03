@@ -16,9 +16,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-  host: "::",
+  host: true,
   port: 8080,
-  strictPort: true, // don't fallback to a different port
+  strictPort: true,
   origin: 'https://0d30b6cc-44a5-4e63-92e9-05c316abef90.lovableproject.com'
   }
 }))
