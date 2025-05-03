@@ -16,9 +16,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-  host: true,
-  port: 8080,
-  strictPort: true,
-  origin: 'https://0d30b6cc-44a5-4e63-92e9-05c316abef90.lovableproject.com'
+    allowedHosts: true
   }
 }))
