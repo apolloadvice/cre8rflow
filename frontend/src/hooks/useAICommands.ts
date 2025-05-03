@@ -1,15 +1,25 @@
 
 import { useCommand, Operation } from "@/hooks/useCommand";
 import { useToast } from "@/hooks/use-toast";
-import { useEditorStore, Clip } from "@/store/editorStore";
+import { useEditorStore } from "@/store/editorStore";
+import { useVideoHandler } from "@/hooks/useVideoHandler";
 
 export const useAICommands = () => {
   const { toast } = useToast();
   const { executeCommand } = useCommand("current-project");
-  const { clips, selectedClipId, setClips, setSelectedClipId } = useEditorStore();
+  const { 
+    activeVideoAsset, 
+    clips, 
+    selectedClipId, 
+    setClips, 
+    setSelectedClipId,
+    setVideoSrc, 
+    setDuration 
+  } = useEditorStore();
+  const { handleVideoProcessed } = useVideoHandler();
 
   const handleChatCommand = async (command: string) => {
-    if (!selectedClipId && clips.length === 0) {
+    if (!activeVideoAsset && clips.length === 0) {
       toast({
         title: "No video available",
         description: "Please add a video to the timeline first",
@@ -23,9 +33,29 @@ export const useAICommands = () => {
     // Use our command hook to process the NLP request
     const result = await executeCommand(command);
     
-    if (result && result.operations.length > 0) {
-      // Apply the operations to the timeline
-      applyOperationsToTimeline(result.operations);
+    if (result) {
+      // Check if the command resulted in a new processed video
+      if (result.videoUrl) {
+        console.log("Received processed video URL:", result.videoUrl);
+        
+        // Update the video source with the new processed video
+        handleVideoProcessed(result.videoUrl);
+        
+        toast({
+          title: "Video processed",
+          description: "Your edited video is now ready to view",
+        });
+      }
+      // If we have operations but no video URL, add them as effect clips (for visualization only)
+      else if (result.operations && result.operations.length > 0) {
+        applyOperationsToTimeline(result.operations);
+        
+        toast({
+          title: "Edits visualized",
+          description: `${result.operations.length} operations added to timeline as visual effects`,
+        });
+      }
+      
       return result;
     }
     

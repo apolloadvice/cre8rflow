@@ -66,9 +66,11 @@ const ChatPanel = ({ onChatCommand, onVideoProcessed }: ChatPanelProps) => {
       onVideoProcessed(result.videoUrl);
     }
     
-    const responseContent = result 
-      ? `I've applied your edit request: ${result.operations.length} operations applied directly to your video.`
-      : "I processed your request but couldn't apply any edits.";
+    const responseContent = result?.videoUrl
+      ? `I've processed your video based on your request: "${input}". The edited video has replaced the original in the timeline.`
+      : result?.operations?.length 
+        ? `I've applied your edit request: ${result.operations.length} operations applied to your video.`
+        : "I processed your request but couldn't apply any edits.";
       
     const responseMessage: Message = {
       id: (Date.now() + 1).toString(),

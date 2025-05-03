@@ -16,6 +16,7 @@ export const useVideoHandler = () => {
     setActiveVideoAsset,
     setVideoSrc,
     setDuration,
+    setCurrentTime
   } = useEditorStore();
 
   const handleVideoSelect = (video: any) => {
@@ -115,13 +116,55 @@ export const useVideoHandler = () => {
     if (processedVideoUrl) {
       console.log("Video processed, updating source:", processedVideoUrl);
       
-      // Update the video source to show the processed video
-      setVideoSrc(processedVideoUrl);
+      // Create a temporary video element to get metadata of the processed video
+      const tempVideo = document.createElement("video");
+      tempVideo.src = processedVideoUrl;
       
-      toast({
-        title: "Video processed",
-        description: "Your edited video is now ready to view",
-      });
+      tempVideo.onloadedmetadata = () => {
+        const processedDuration = tempVideo.duration;
+        
+        // Update the video source to show the processed video
+        setVideoSrc(processedVideoUrl);
+        setDuration(processedDuration);
+        
+        // Create a new active video asset based on the processed video
+        const newVideoAsset = {
+          ...activeVideoAsset,
+          src: processedVideoUrl,
+          duration: processedDuration,
+          id: `processed-${Date.now()}`,
+          name: activeVideoAsset?.name ? `${activeVideoAsset.name} (Edited)` : "Processed Video"
+        };
+        
+        setActiveVideoAsset(newVideoAsset);
+        
+        // Replace all clips with a single clip for the processed video
+        const newClip: Clip = {
+          id: `clip-${Date.now()}`,
+          start: 0,
+          end: processedDuration,
+          track: 0,
+          type: "video",
+          name: newVideoAsset.name
+        };
+        
+        setClips([newClip]);
+        setSelectedClipId(newClip.id);
+        setCurrentTime(0);  // Seek to the beginning of the new video
+        
+        toast({
+          title: "Video processed",
+          description: "Your edited video has replaced the original in the timeline",
+        });
+      };
+      
+      tempVideo.onerror = () => {
+        toast({
+          title: "Error",
+          description: "Failed to load processed video",
+          variant: "destructive"
+        });
+      };
     }
   };
 

@@ -41,17 +41,20 @@ export const useCommand = (projectId: string) => {
       // For now, we'll simulate the API call with mock data
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Mock response based on command text - simulate both operations and processed video
+      // Determine if this command should actually process the video or just add visual effects
+      const shouldProcessVideo = commandRequiresProcessing(commandText);
+      
+      // Mock response based on command text
       const mockResult: CommandResult = {
-        operations: simulateOperations(commandText),
-        videoUrl: simulateProcessedVideo(commandText) // Simulate a processed video URL
+        operations: simulateOperations(commandText)
       };
       
+      // If this command should result in actual video processing, include a video URL
+      if (shouldProcessVideo) {
+        mockResult.videoUrl = simulateProcessedVideo(commandText);
+      }
+      
       setLastResult(mockResult);
-      toast({
-        title: "Command processed",
-        description: `Applied ${mockResult.operations.length} operations to your video`,
-      });
       
       return mockResult;
     } catch (error) {
@@ -66,14 +69,52 @@ export const useCommand = (projectId: string) => {
     }
   };
   
+  // Function to determine if a command should actually process video instead of just adding UI elements
+  const commandRequiresProcessing = (commandText: string): boolean => {
+    const lowerCommand = commandText.toLowerCase();
+    
+    // Commands that should actually process the video
+    const processingCommands = [
+      "cut", "trim", "remove", "delete",
+      "speed", "slow", "fast",
+      "crop", "resize",
+      "rotate", "flip"
+    ];
+    
+    return processingCommands.some(cmd => lowerCommand.includes(cmd));
+  };
+  
   // Function to simulate operations based on command text
   const simulateOperations = (commandText: string): Operation[] => {
     const lowerCommand = commandText.toLowerCase();
     
     if (lowerCommand.includes("cut") || lowerCommand.includes("remove")) {
+      // Extract time information from the command
+      let start = 0;
+      let end = 5; // Default to first 5 seconds
+      
+      if (lowerCommand.includes("first")) {
+        const match = lowerCommand.match(/first\s+(\d+)/);
+        if (match && match[1]) {
+          end = parseInt(match[1], 10);
+          start = 0;
+        }
+      } else if (lowerCommand.includes("last")) {
+        const match = lowerCommand.match(/last\s+(\d+)/);
+        if (match && match[1]) {
+          end = 60; // Assuming 60 seconds total
+          start = end - parseInt(match[1], 10);
+        }
+      } else if (lowerCommand.includes("between")) {
+        const match = lowerCommand.match(/between\s+(\d+)\s+and\s+(\d+)/);
+        if (match && match[1] && match[2]) {
+          start = parseInt(match[1], 10);
+          end = parseInt(match[2], 10);
+        }
+      }
+      
       return [
-        { start_sec: 5, end_sec: 15, effect: "cut" },
-        { start_sec: 30, end_sec: 45, effect: "cut" }
+        { start_sec: start, end_sec: end, effect: "cut" }
       ];
     } else if (lowerCommand.includes("fade")) {
       return [
@@ -106,7 +147,8 @@ export const useCommand = (projectId: string) => {
                        commandText.toLowerCase().includes("caption") ? "caption" : 
                        commandText.toLowerCase().includes("color") ? "color" : "edit";
                        
-    return `https://api.example.com/processed-videos/${commandType}_${timestamp}.mp4`;
+    // Use a sample video URL from a public source for testing
+    return `https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4?${commandType}_${timestamp}`;
   };
 
   return {
