@@ -24,10 +24,18 @@ export default defineConfig(({ mode }) => ({
     port: 8080,               // keep the same port the Dockerfile expects
     strictPort: true,         // fail if 8080 is busy
     cors: true,               // let Lovable's proxy iframe the app
+    allowedHosts: true,       // accept any host
     hmr: {
       protocol: 'ws',
       host: 'localhost',      // bypass websocket host check
       clientPort: 443         // works for both HTTP and HTTPS previews
     }
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 8080,
+    strictPort: true,
+    allowedHosts: true,       // preview server (needed since Vite 5.4.12+)
+    cors: true
   }
 }))
