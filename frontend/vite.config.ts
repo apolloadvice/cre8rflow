@@ -16,22 +16,22 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    host: '0.0.0.0',          // bind on all interfaces
-    port: 5173,               // use the port specified in package.json
-    strictPort: true,         // fail if port is busy
-    cors: true,               // let Lovable's proxy iframe the app
-    allowedHosts: true,       // accept any host
+    host: '0.0.0.0',          
+    port: 8080,               // Set port to 8080 to match the root config
+    strictPort: true,         
+    cors: true,               
+    allowedHosts: true,       
     hmr: {
       protocol: 'ws',
-      host: 'localhost',      // bypass websocket host check
-      clientPort: 443         // works for both HTTP and HTTPS previews
+      host: 'localhost',      
+      clientPort: 443         
     }
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 8080,               // Match the server port
     strictPort: true,
-    allowedHosts: true,       // preview server (needed since Vite 5.4.12+)
+    allowedHosts: true,       
     cors: true
   }
 }))
