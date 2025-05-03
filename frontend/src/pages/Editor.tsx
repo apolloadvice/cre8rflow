@@ -218,7 +218,9 @@ const Editor = () => {
       };
     });
     
-    setClips([...clips, ...newClips]);
+    // Fix: Preserve existing clips by merging them with new clips
+    const updatedClips = [...clips, ...newClips];
+    setClips(updatedClips);
     
     if (newClips.length > 0) {
       setSelectedClipId(newClips[0].id);
