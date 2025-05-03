@@ -23,7 +23,8 @@ const EditorContent = () => {
     currentTime, 
     duration, 
     setCurrentTime,
-    setDuration
+    setDuration,
+    updateClip
   } = useEditorStore();
   
   // Use our custom hooks
@@ -47,6 +48,11 @@ const EditorContent = () => {
       cancelAnimationFrame(animationFrameId);
     };
   }, [setCurrentTime]);
+
+  // Handle clip updates (trimming)
+  const handleClipUpdate = (clipId: string, updates: { start?: number; end?: number }) => {
+    updateClip(clipId, updates);
+  };
 
   // Handlers for layout changes
   const handleSidebarResize = (sizes: number[]) => {
@@ -144,6 +150,7 @@ const EditorContent = () => {
                 selectedClipId={useEditorStore.getState().selectedClipId}
                 onVideoDrop={handleVideoDrop}
                 onVideoAssetDrop={handleVideoAssetDrop}
+                onClipUpdate={handleClipUpdate}
               />
             </ResizablePanel>
           </ResizablePanelGroup>

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { debounce } from "lodash";
@@ -20,6 +19,7 @@ interface TimelineProps {
   selectedClipId?: string | null;
   onVideoDrop?: (file: File, track: number, time: number) => void;
   onVideoAssetDrop?: (videoAsset: any, track: number, time: number) => void;
+  onClipUpdate?: (clipId: string, updates: { start?: number; end?: number }) => void;
 }
 
 const Timeline = forwardRef<HTMLDivElement, TimelineProps>(({
@@ -31,11 +31,13 @@ const Timeline = forwardRef<HTMLDivElement, TimelineProps>(({
   selectedClipId,
   onVideoDrop,
   onVideoAssetDrop,
+  onClipUpdate,
 }, ref) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const trackCount = 6;
   const [thumbnailsVisible, setThumbnailsVisible] = useState(true);
+  const [isDraggingHandle, setIsDraggingHandle] = useState<{ clipId: string; handle: 'start' | 'end' } | null>(null);
   
   // Use the forwarded ref or fall back to internal ref
   const resolvedRef = (ref as React.RefObject<HTMLDivElement>) || timelineRef;
@@ -220,6 +222,63 @@ const Timeline = forwardRef<HTMLDivElement, TimelineProps>(({
     };
   };
 
+  // Handle mouse down on trim handles
+  const handleTrimHandleMouseDown = (
+    e: React.MouseEvent,
+    clipId: string,
+    handle: 'start' | 'end'
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsDraggingHandle({ clipId, handle });
+    
+    // Add event listeners for mousemove and mouseup
+    document.addEventListener('mousemove', handleTrimHandleMouseMove);
+    document.addEventListener('mouseup', handleTrimHandleMouseUp);
+  };
+  
+  // Handle mouse move when dragging trim handles
+  const handleTrimHandleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingHandle || !resolvedRef.current) return;
+    
+    const { clipId, handle } = isDraggingHandle;
+    const clipToUpdate = clips.find(clip => clip.id === clipId);
+    
+    if (!clipToUpdate) return;
+    
+    const rect = resolvedRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const draggedTime = (x / rect.width) * duration;
+    
+    // Calculate the new start/end time with constraints
+    if (handle === 'start') {
+      // Don't allow start time to go past end time - 1 second minimum duration
+      const newStart = Math.min(Math.max(0, draggedTime), clipToUpdate.end - 1);
+      onClipUpdate?.(clipId, { start: newStart });
+    } else if (handle === 'end') {
+      // Don't allow end time to go before start time + 1 second minimum duration
+      const newEnd = Math.max(Math.min(duration, draggedTime), clipToUpdate.start + 1);
+      onClipUpdate?.(clipId, { end: newEnd });
+    }
+  }, [isDraggingHandle, clips, duration, onClipUpdate, resolvedRef]);
+  
+  // Handle mouse up to end dragging
+  const handleTrimHandleMouseUp = useCallback(() => {
+    setIsDraggingHandle(null);
+    
+    // Remove event listeners
+    document.removeEventListener('mousemove', handleTrimHandleMouseMove);
+    document.removeEventListener('mouseup', handleTrimHandleMouseUp);
+  }, [handleTrimHandleMouseMove]);
+  
+  // Clean up event listeners on component unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleTrimHandleMouseMove);
+      document.removeEventListener('mouseup', handleTrimHandleMouseUp);
+    };
+  }, [handleTrimHandleMouseMove, handleTrimHandleMouseUp]);
+
   return (
     <div className="h-full flex flex-col bg-cre8r-gray-900 border-t border-cre8r-gray-700 select-none">
       <div className="flex items-center justify-between p-2 bg-cre8r-gray-800 border-b border-cre8r-gray-700">
@@ -279,21 +338,42 @@ const Timeline = forwardRef<HTMLDivElement, TimelineProps>(({
                     <div
                       key={clip.id}
                       className={cn(
-                        "video-timeline-marker absolute h-10 my-1 rounded opacity-90 overflow-hidden cursor-pointer hover:opacity-100 hover:ring-1 hover:ring-white transition-opacity",
-                        selectedClipId === clip.id && "ring-2 ring-cre8r-violet"
+                        "video-timeline-marker absolute h-10 my-1 rounded overflow-hidden cursor-pointer hover:opacity-100 transition-opacity",
+                        selectedClipId === clip.id ? "ring-2 ring-cre8r-violet opacity-100" : "opacity-90 hover:ring-1 hover:ring-white"
                       )}
                       style={{
                         left: `${(clip.start / duration) * 100}%`,
                         width: `${((clip.end - clip.start) / duration) * 100}%`,
                         ...getThumbnailStyle(clip)
                       }}
-                      onClick={() => onClipSelect?.(clip.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClipSelect?.(clip.id);
+                      }}
                       title={clip.name || "Edit"}
                     >
                       <div className={`h-full w-full bg-gradient-to-r ${getClipStyle(clip.type)} flex items-center justify-center px-2 bg-opacity-70`}>
                         <span className="text-xs text-white truncate font-medium">
                           {clip.name || formatTime(clip.end - clip.start)}
                         </span>
+                      </div>
+                      
+                      {/* Left trim handle */}
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-3 hover:bg-white hover:bg-opacity-30 cursor-w-resize z-10"
+                        onMouseDown={(e) => handleTrimHandleMouseDown(e, clip.id, 'start')}
+                        title="Trim start"
+                      >
+                        <div className="h-full w-1 bg-white opacity-60 mx-auto"></div>
+                      </div>
+                      
+                      {/* Right trim handle */}
+                      <div 
+                        className="absolute right-0 top-0 bottom-0 w-3 hover:bg-white hover:bg-opacity-30 cursor-e-resize z-10"
+                        onMouseDown={(e) => handleTrimHandleMouseDown(e, clip.id, 'end')}
+                        title="Trim end"
+                      >
+                        <div className="h-full w-1 bg-white opacity-60 mx-auto"></div>
                       </div>
                     </div>
                   ))}
